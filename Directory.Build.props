@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>10.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <Deterministic>true</Deterministic>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <Version>1.0.1</Version>
+    <ValheimManagedDir Condition="'$(ValheimManagedDir)' == ''">$(MSBuildThisFileDirectory).local/valheim-server/valheim_server_Data/Managed</ValheimManagedDir>
+    <ModDependenciesDir>$(MSBuildThisFileDirectory).local/dependencies</ModDependenciesDir>
+  </PropertyGroup>
+</Project>

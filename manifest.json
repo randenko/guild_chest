@@ -1,0 +1,7 @@
+{
+  "name": "GuildChest",
+  "version_number": "1.0.1",
+  "website_url": "",
+  "description": "One shared inventory across all guild chests in a Valheim world.",
+  "dependencies": ["denikson-BepInExPack_Valheim-5.4.2351", "ValheimModding-Jotunn-2.30.2"]
+}

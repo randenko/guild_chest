@@ -1,0 +1,10 @@
+.local/
+artifacts/
+**/bin/
+**/obj/
+TestResults/
+*.user
+*.suo
+__pycache__/
+*.pyc
+Environment.props

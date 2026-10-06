@@ -1,0 +1,20 @@
+{
+  "name": "Guild Chest",
+  "build": { "dockerfile": "Dockerfile", "context": ".." },
+  "remoteUser": "vscode",
+  "updateRemoteUserUID": true,
+  "mounts": [
+    "source=guild-chest-nuget,target=/home/vscode/.nuget/packages,type=volume"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-dotnettools.csharp"],
+      "settings": {
+        "dotnet.preferCSharpExtension": true,
+        "dotnet.defaultSolution": "GuildChest.sln"
+      }
+    }
+  },
+  "postCreateCommand": "dotnet restore GuildChest.sln",
+  "shutdownAction": "stopContainer"
+}

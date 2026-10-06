@@ -1,0 +1,6 @@
+{
+  "dotnet.preferCSharpExtension": true,
+  "dotnet.defaultSolution": "GuildChest.sln",
+  "files.exclude": {"**/bin": true, "**/obj": true},
+  "search.exclude": {".local": true, "artifacts": true}
+}

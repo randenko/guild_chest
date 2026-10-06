@@ -1,0 +1,10 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {"label": "Setup References", "type": "shell", "command": "bash scripts/dev.sh setup", "problemMatcher": []},
+    {"label": "Build Debug", "type": "shell", "command": "bash scripts/dev.sh build", "group": {"kind": "build", "isDefault": true}, "problemMatcher": "$msCompile"},
+    {"label": "Run Tests", "type": "shell", "command": "bash scripts/dev.sh test", "group": "test", "problemMatcher": "$msCompile"},
+    {"label": "Package Release", "type": "shell", "command": "bash scripts/dev.sh package", "problemMatcher": "$msCompile"},
+    {"label": "Debug Test Host", "type": "shell", "command": "VSTEST_HOST_DEBUG=1 bash scripts/dev.sh test", "problemMatcher": []}
+  ]
+}
