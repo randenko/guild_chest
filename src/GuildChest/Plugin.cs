@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using BepInEx;
+using BepInEx.Configuration;
 using HarmonyLib;
 using Jotunn.Configs;
 using Jotunn.Entities;
@@ -12,11 +13,13 @@ namespace GuildChest;
 
 [BepInPlugin(Id, "Guild Chest", ModVersion)]
 [BepInDependency(Jotunn.Main.ModGuid)]
+[BepInDependency("Azumatt.AzuAutoStore", BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency("Azumatt.AzuCraftyBoxes", BepInDependency.DependencyFlags.SoftDependency)]
 [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Patch)]
 public sealed class Plugin : BaseUnityPlugin
 {
     public const string Id = "com.randenko.guildchest";
-    public const string ModVersion = "1.0.1";
+    public const string ModVersion = "1.0.6";
     public const string ChestName = "GuildChest";
     internal const string StateName = "GuildChestWorldState";
     internal static readonly int ChestHash = ChestName.GetStableHashCode();
@@ -25,16 +28,20 @@ public sealed class Plugin : BaseUnityPlugin
     internal static CustomRPC RequestRpc = null!;
     internal static CustomRPC ReplyRpc = null!;
     private Harmony? harmony;
+    internal static ConfigEntry<float> AutomationRange = null!;
 
     private void Awake()
     {
         Instance = this;
+        AutomationRange = Config.Bind("Compatibility", "Automation range", 20f,
+            new ConfigDescription("Maximum player distance for storage-mod transfers and resource previews. The server enforces its value.", new AcceptableValueRange<float>(1f, 100f)));
         RequestRpc = NetworkManager.Instance.AddRPC("GuildChestRequestsV1", Host.Receive, IgnoreRequest);
         // A host player's replies are delivered on the server too, so both roles must handle responses.
         ReplyRpc = NetworkManager.Instance.AddRPC("GuildChestRepliesV1", Client.Receive, Client.Receive);
         PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
         harmony = new Harmony(Id);
         harmony.PatchAll(typeof(Plugin).Assembly);
+        StorageCompatibility.Install(harmony);
         Logger.LogInfo("Guild Chest loaded. Shared inventory: 32 slots, one user per world.");
     }
 
@@ -73,7 +80,7 @@ public sealed class Plugin : BaseUnityPlugin
         PrefabManager.OnVanillaPrefabsAvailable -= RegisterPrefabs;
     }
 
-    private void Update() { Host.Tick(); Client.Tick(); }
+    private void Update() { Host.Tick(); Client.Tick(); StorageCompatibility.Tick(); }
     private static IEnumerator IgnoreRequest(long sender, ZPackage package) { yield break; }
     private void OnDestroy()
     {

@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace GuildChest;
 
-internal enum QuickAction { None, Stack, Take }
+internal enum QuickAction { None, Stack, Take, Automation }
 
 internal static class Client
 {
@@ -26,6 +26,10 @@ internal static class Client
     private static bool deferredDeath;
     private static QuickAction quickAction;
     private static Transaction? transaction;
+    private static Action<Inventory, Inventory>? automationAction;
+    private static Action<bool, string>? automationCompleted;
+    internal static bool Applying;
+    internal static bool Opening => opening;
 
     internal sealed class Transaction
     {
@@ -36,6 +40,7 @@ internal static class Client
         internal readonly byte[] PlayerBefore;
         internal byte[] Request = Array.Empty<byte>();
         internal long Sequence;
+        internal Action<bool, string>? Completed;
         internal Transaction()
         {
             var player = Player.m_localPlayer.GetInventory();
@@ -75,15 +80,44 @@ internal static class Client
     internal static Container? CurrentContainer => InventoryGui.instance ? AccessTools.FieldRefAccess<InventoryGui, Container>("m_currentContainer")(InventoryGui.instance) : null;
     internal static bool GuildUi => Owns(CurrentContainer);
 
-    internal static void Open(Container container, QuickAction action = QuickAction.None)
+    internal static bool Open(Container container, QuickAction action = QuickAction.None)
     {
-        if (Pending || opening || HasSession) { Plugin.Message("The guild inventory is busy."); return; }
-        if (!Player.m_localPlayer || Player.m_localPlayer.IsDead() || !PrivateArea.CheckAccess(container.transform.position)) return;
+        if (Pending || opening || HasSession) { Plugin.Message("The guild inventory is busy."); return false; }
+        if (!Player.m_localPlayer || Player.m_localPlayer.IsDead() || !PrivateArea.CheckAccess(container.transform.position)) return false;
         var zdo = container.GetComponent<ZNetView>().GetZDO();
-        if (zdo == null) return;
+        if (zdo == null) return false;
         opening = container; chestId = zdo.m_uid; quickAction = action; openRequest++;
         lastReply = Time.unscaledTime;
-        Send(Operation.Open, "", openRequest);
+        Send(action == QuickAction.Automation ? Operation.OpenAutomation : Operation.Open, "", openRequest);
+        return true;
+    }
+
+    internal static bool Transfer(Container container, Action<Inventory, Inventory> action, Action<bool, string>? completed)
+    {
+        if (Pending || opening || !Player.m_localPlayer || Player.m_localPlayer.IsDead() || Player.m_localPlayer.IsTeleporting()) return false;
+        if (HasSession && !Owns(container)) return false;
+        if (Owns(container)) { StageAutomation(action, completed); return true; }
+        automationAction = action; automationCompleted = completed;
+        // Local-host RPCs can complete synchronously and clear opening before Open
+        // returns. Whether the request was sent is independent of that field.
+        if (Open(container, QuickAction.Automation)) return true;
+        automationAction = null; automationCompleted = null; return false;
+    }
+
+    private static void StageAutomation(Action<Inventory, Inventory> action, Action<bool, string>? completed)
+    {
+        try
+        {
+            if (!Player.m_localPlayer || Player.m_localPlayer.IsDead() || Player.m_localPlayer.IsTeleporting())
+                throw new InvalidOperationException("The player is no longer available for this transfer.");
+            var candidate = new Transaction { Completed = completed };
+            action(candidate.PlayerStage, candidate.SharedStage);
+            if (!Submit(candidate)) completed?.Invoke(true, "No items transferred.");
+        }
+        catch (Exception exception)
+        {
+            Plugin.Error(exception); completed?.Invoke(false, exception.Message);
+        }
     }
 
     private static ZPackage Header(Operation operation, string sessionToken, long requestSequence)
@@ -105,16 +139,39 @@ internal static class Client
         var operation = (Operation)package.ReadInt(); var id = package.ReadZDOID(); string receivedToken = package.ReadString(); long requestSequence = package.ReadLong();
         var result = (AccessResult)package.ReadInt(); long receivedRevision = package.ReadLong(); byte[] bytes = package.ReadByteArray();
         string reason = package.GetPos() < package.Size() ? package.ReadString() : result.ToString();
+        if (operation == Operation.Peek) { StorageCompatibility.ReceiveSnapshot(id, requestSequence, result, receivedRevision, bytes); return; }
         if (id != chestId) return;
-        if (operation == Operation.Open)
+        if (operation == Operation.Open || operation == Operation.OpenAutomation)
         {
             if (!opening || requestSequence != openRequest) return;
             var requested = opening; opening = null;
-            if (result != AccessResult.Accepted) { Plugin.Message(result == AccessResult.Busy ? "Someone is using the guild inventory." : $"Guild Chest: {reason}"); return; }
+            if (result != AccessResult.Accepted)
+            {
+                var failed = automationCompleted; automationAction = null; automationCompleted = null;
+                failed?.Invoke(false, reason);
+                Plugin.Message(result == AccessResult.Busy ? "Someone is using the guild inventory." : $"Guild Chest: {reason}"); return;
+            }
+            Inventory decoded;
+            try { decoded = InventoryCodec.Read(bytes); }
+            catch (Exception exception)
+            {
+                // A server may have an item mod that this client lacks. Release the
+                // granted lease before reporting the failure instead of keeping it alive.
+                Send(Operation.Close, receivedToken, 0);
+                var failed = automationCompleted; Reset(); failed?.Invoke(false, exception.Message);
+                Plugin.Message($"Guild Chest: {exception.Message}"); return;
+            }
             Chest = requested; token = receivedToken; sequence = 0; revision = receivedRevision;
-            View = InventoryCodec.Read(bytes); lastReply = Time.unscaledTime; nextHeartbeat = lastReply + 5;
+            View = decoded; lastReply = Time.unscaledTime; nextHeartbeat = lastReply + 5;
+            StorageCompatibility.Protect(View);
             AccessTools.FieldRefAccess<Container, Inventory>("m_inventory")(requested) = View;
-            if (quickAction == QuickAction.None) InventoryGui.instance.Show(requested);
+            if (quickAction == QuickAction.Automation)
+            {
+                var action = automationAction!; var completed = automationCompleted;
+                automationAction = null; automationCompleted = null;
+                StageAutomation(action, completed); Close();
+            }
+            else if (quickAction == QuickAction.None) InventoryGui.instance.Show(requested);
             else { Bulk(quickAction == QuickAction.Take); Close(); }
             return;
         }
@@ -126,8 +183,11 @@ internal static class Client
             var finished = transaction;
             if (result == AccessResult.Accepted)
             {
-                finished.Apply(); revision = receivedRevision;
+                try { Applying = true; finished.Apply(); }
+                finally { Applying = false; }
+                revision = receivedRevision;
                 if (View != null) InventoryCodec.Replace(View, InventoryCodec.Read(bytes));
+                StorageCompatibility.RefreshSnapshot(bytes, receivedRevision);
             }
             else
             {
@@ -141,6 +201,7 @@ internal static class Client
                 deferredDeath = false; Player.m_localPlayer.OnDeath(); closeWanted = true;
             }
             if (closeWanted || !Chest) Close();
+            finished.Completed?.Invoke(result == AccessResult.Accepted, reason);
         }
         else if (operation == Operation.Heartbeat && result != AccessResult.Accepted)
         {
@@ -158,6 +219,7 @@ internal static class Client
     internal static void Reset()
     {
         Chest = null; opening = null; View = null; token = ""; transaction = null; closeWanted = false; deferredDeath = false; quickAction = QuickAction.None;
+        automationAction = null; automationCompleted = null;
     }
     internal static bool DeferDeath(Player player)
     {
@@ -168,7 +230,11 @@ internal static class Client
     {
         if (!ZNet.instance || !ZNetScene.instance) return;
         float now = Time.unscaledTime;
-        if (opening && now - lastReply > 30) { opening = null; Plugin.Message("Guild Chest host did not respond."); }
+        if (opening && now - lastReply > 30)
+        {
+            opening = null; var failed = automationCompleted; automationAction = null; automationCompleted = null;
+            failed?.Invoke(false, "Guild Chest host did not respond."); Plugin.Message("Guild Chest host did not respond.");
+        }
         if (!HasSession) return;
         if (now >= nextHeartbeat) { Send(Operation.Heartbeat, token, sequence); nextHeartbeat = now + 5; }
         if (Pending)
@@ -179,19 +245,20 @@ internal static class Client
             Vector3.Distance(Chest.transform.position, Player.m_localPlayer.transform.position) > 4f) Close();
     }
 
-    private static void Submit(Transaction candidate)
+    private static bool Submit(Transaction candidate)
     {
         foreach (var item in candidate.SharedStage.GetAllItems()) item.m_equipped = false;
         byte[] shared = InventoryCodec.Save(candidate.SharedStage);
-        if (shared.SequenceEqual(InventoryCodec.Save(View!))) { ClearDrag(); return; }
+        if (shared.SequenceEqual(InventoryCodec.Save(View!))) { ClearDrag(); return false; }
         byte[] player = InventoryCodec.Save(candidate.PlayerStage);
-        if (shared.Length > InventoryCodec.MaxBytes || player.Length > InventoryCodec.MaxBytes) { Plugin.Message("This transfer exceeds the supported inventory size."); return; }
+        if (shared.Length > InventoryCodec.MaxBytes || player.Length > InventoryCodec.MaxBytes) throw new InvalidOperationException("This transfer exceeds the supported inventory size.");
         candidate.Sequence = ++sequence;
         var package = Header(Operation.Commit, token, candidate.Sequence); package.Write(revision);
         package.Write(candidate.PlayerStage.GetWidth()); package.Write(candidate.PlayerStage.GetHeight());
         package.Write(candidate.PlayerBefore); package.Write(shared); package.Write(player);
         candidate.Request = package.GetArray(); transaction = candidate; nextRetry = Time.unscaledTime + 2;
         ClearDrag(); Plugin.RequestRpc.SendPackage(Plugin.ServerId, new ZPackage(candidate.Request));
+        return true;
     }
     internal static void Bulk(bool take)
     {

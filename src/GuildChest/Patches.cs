@@ -243,5 +243,5 @@ internal static class WorldLoadedPatch
 [HarmonyPatch(typeof(ZNet), "Shutdown")]
 internal static class ShutdownPatch
 {
-    private static void Prefix() { Host.Persist(); Client.Reset(); Host.Reset(); }
+    private static void Prefix() { Host.Persist(); Client.Reset(); Host.Reset(); StorageCompatibility.Reset(); BuildingContinuation.Reset(); }
 }

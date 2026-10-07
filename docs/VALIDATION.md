@@ -5,7 +5,7 @@ app 896660 on 2026-10-05. Exact Steam build ID and reference hashes are recorded
 locally in `.local/references.json`. A successful compile checks compatibility
 with this build's assemblies; future 1.x updates need verification.
 
-## Completed checks (2026-10-05)
+## Completed checks (through 2026-10-07)
 
 - The dev container image builds successfully and runs the solution as the
   non-root `vscode` user with .NET SDK 10.0.401.
@@ -13,7 +13,7 @@ with this build's assemblies; future 1.x updates need verification.
 - All **8** core synchronization tests pass.
 - The reference setup succeeds through anonymous SteamCMD; a repeated setup
   skips installed downloads. Package metadata and the 256 × 256 PNG are valid,
-  and the release ZIP contains only the intended seven files.
+  and the release ZIP contains only the intended package files.
 - A native headless Valheim 1.0.16 fixture verifies prefab registration, forge
   recipe, dimensions, serialization of 12 iron and a damaged quality-3 iron sword
   with crafter/custom data, and saving the inventory with two distant chests.
@@ -31,11 +31,77 @@ with this build's assemblies; future 1.x updates need verification.
   to the unresolved item's metadata or quantity, reject duplicate inventory
   slots, and still reject an unresolved prefab in shared storage. All 8 core
   tests and the Release build pass for this version.
+- Version **1.0.2** passes the native compatibility fixture with the downloaded
+  author's AzuAutoStore **3.1.7** and AzuCraftyBoxes **1.8.27** installed together.
+  The real AutoStore hotkey handler respects hotbar exclusions and deposits once
+  across two nearby guild access points. Crafty previews count the shared stock
+  once; acknowledged building supply, its native ConsumeResources patch, and
+  resuming native DoCrafting after material acknowledgement pass. The fixture
+  delays commit replies by 0.5 seconds and verifies blocked player writes while
+  pending, rejected/busy transfers without item loss, and ordinary chest writes.
+  The native transfer fixture also passes with neither QoL mod installed.
+  All 8 core synchronization tests pass. Live remote clients, upgrade/batch and
+  one-ingredient recipes, favorites, and other optional storage mods remain
+  manual checks below.
+- Version **1.0.3** verifies that AutoStore's transfer effect fires once after
+  acknowledgement, never while pending or for a skipped deposit; its configured
+  chest ping and highlight components are created. The hammer HUD preview scope
+  now includes same-frame cache invalidation. A portal-specific fixture checks
+  **10/10 greydwarf eyes, 20/20 fine wood, and 2/2 surtling cores** from guild-only
+  stock, the native CanBuild gate with a nearby workbench, and acknowledged
+  transfer of all three resource types before a second build attempt. The second
+  native TryPlacePiece call reaches the fixture spawn hook, creates exactly one
+  actual portal prefab, and consumes its acknowledged resources once. All 8
+  synchronization tests pass; the Release build has no warnings or errors.
+- Version **1.0.4** passes the client-preview lifecycle regression: repeated
+  authority updates with IsServer false and no authority manager leave the
+  received preview intact. Authority reset also preserves it. Portal HUD counts,
+  build checks, acknowledged resource supply, the placement spawn fixture and
+  AutoStore effects pass afterward. All 8 core tests and the Release build pass.
+- Version **1.0.5** passes single-click portal continuation through native
+  UpdatePlacement after a delayed commit acknowledgement. The test recreates
+  the placement ghost at the same logical target, then verifies one portal,
+  one resource consumption, stamina and hammer durability costs, no duplicate
+  on the following update, and no resource-ready/re-click message. Changing aim
+  while waiting cancels placement and retains acknowledged resources. The
+  existing client preview, crafting, AutoStore effect and rejection checks pass.
+  All 8 core tests pass and the Release build has no warnings or errors.
+- Version **1.0.6** adds native regressions for the three storage-adapter issues
+  found in review. A recipe requiring two fish consumes two quality-2 fish from
+  guild stock while retaining the player's quality-1 fish. Batch quantities,
+  Leave One across qualities, insufficient matching stock without mutation,
+  and existing player/ordinary-container ingredient choices pass. AutoStore
+  deposits iron into guild storage and stone into ordinary storage with one
+  hotkey, in both destination orders, with one effect per successful
+  destination. Guild aliases, no-op/busy responses, single-item actions, and
+  delayed open/commit responses pass. Sustained **1.2-second** preview replies
+  keep build material counts available. A pre-commit preview cannot replace
+  an acknowledged revision; dropped requests retry after a simulated timeout,
+  and expired, reset-world and old-chest replies are ignored. The existing
+  single-click portal, cancellation and client lifecycle checks also pass.
+  All 8 core tests and the Release/native-fixture builds pass without warnings
+  or errors.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
-its floating chest, and the headless scene's GUI Update loop. It binds the native
+its floating chest, the headless scene's GUI Update loop, and Game.Update's
+player-spawn lifecycle. It binds the native
 inventory grids explicitly. This validates handlers and RPCs, not rendering or
 the normal player/input lifecycle.
+
+The portal fixture runs native UpdatePlacement and TryPlacePiece with a
+deterministic placement ghost and build table. It suppresses headless ghost
+setup/raycast updates and explicitly tests replacing the ghost at the same
+target. Its PlacePiece spawn hook instantiates the actual portal prefab because
+a dedicated server has no platform-local user for native creator metadata.
+Mouse raycasts, ordinary client placement metadata and visible effect rendering
+still require a running client.
+
+The client-lifecycle regression temporarily gives the native fixture the remote
+client's authority state (no Store or manager, an active ZDOMan, and IsServer
+false). It runs repeated Host.Tick calls and an authority reset, then checks
+that the previously received preview and chest survive before reading portal
+HUD counts. This exercises the client branch that the earlier host-only fixture
+missed; it does not replace a live two-process multiplayer test.
 
 Visual appearance, live controller input, and remote multiplayer clients remain
 manual checks below; headless testing does not establish those results.
@@ -63,6 +129,15 @@ plugin in a normal game or world: it creates/deletes fixture objects and exits
 the process. A Linux headless server additionally needs its native runtime
 libraries, including PulseAudio libraries; these are not part of the development-only
 dev container. Run BepInEx with the normal server loader for your platform.
+
+For the storage-mod fixture, install the author's **AzuAutoStore 3.1.7** and
+**AzuCraftyBoxes 1.8.27** DLLs in that isolated installation, and additionally set
+`GUILDCHEST_SMOKE_COMPAT=1`. This adds a 0.5-second commit-reply delay to exercise
+the pending-inventory guards. The storage regressions additionally delay open
+replies by 0.5 seconds, preview replies by 1.2 seconds, and drop one preview.
+The timeout check advances the stored request timestamp by 11 seconds instead
+of waiting ten seconds. Those DLLs and the fixture remain excluded from the
+release ZIP.
 
 ## Automated and container checks
 
@@ -104,6 +179,15 @@ rendering, controller input, or a multiplayer player's inventory.
 - [ ] Missing/mismatched Guild Chest plugin prevents multiplayer entry.
 - [ ] Repeat in player-hosted multiplayer and on a dedicated server with two
   modded clients. Verify ordinary chests still behave normally.
+- [ ] AzuAutoStore: hotkey and single-item deposits with multiple guild access
+  points, hotbar/favorite exclusions, existing-item restrictions, full storage,
+  busy lease, denied wards, and latency. No player removal before acknowledgement.
+- [ ] AzuCraftyBoxes: recipe previews count guild stock once; crafting/upgrades,
+  batch crafting, one-ingredient recipes and building use acknowledged supplies.
+  Test Leave One, YAML exclusions, changed recipe/station, full player inventory,
+  and a second client consuming resources before the lease arrives.
+- [ ] Unsupported ground/fuel/ore consumers skip guild storage while continuing
+  to operate on ordinary containers. Repeat without either optional QoL mod.
 
 ## Recovery behavior
 

@@ -56,7 +56,7 @@ Linux host. No host .NET SDK or Unity Editor is required.
    bash scripts/dev.sh package
    ```
 
-The release ZIP is written to `artifacts/GuildChest-1.0.1.zip`, visible in the
+The release ZIP is written to `artifacts/GuildChest-1.0.6.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
 and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create restores
 NuGet packages but does not download or update the game automatically.
@@ -111,8 +111,9 @@ server, stop it before replacing binaries. Build and test with a disposable
 world before adding the mod to a world you intend to keep.
 
 This is a mod for PCs with BepInEx installed; console clients cannot load the
-custom chest. Nearby-crafting and automatic inventory mods are not integrated
-with the shared-store protocol in this version.
+custom chest. Version 1.0.2 adds optional adapters for AzuAutoStore and
+AzuCraftyBoxes. See [storage-mod compatibility](docs/COMPATIBILITY.md) for the
+supported operations, range configuration, and integration API for other mods.
 
 Back up the complete world before removing the mod: the shared state and chest
 prefabs require Guild Chest to be installed when loading/saving that world.

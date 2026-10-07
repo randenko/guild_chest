@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace GuildChest;
 
-internal enum Operation { Open, Commit, Heartbeat, Close }
+internal enum Operation { Open, Commit, Heartbeat, Close, Peek, OpenAutomation }
 
 internal static class Host
 {
@@ -19,6 +19,7 @@ internal static class Host
     private static ZDO? state;
     private static ZDOMan? manager;
     private static float nextPeerCheck;
+    private static string automationToken = "";
     private static readonly Dictionary<int, float> wardRadii = new();
     private static readonly HashSet<ZDOID> wards = new();
     internal static bool IsServer => ZNet.instance && ZNet.instance.IsServer();
@@ -108,7 +109,10 @@ internal static class Host
 
     internal static void Tick()
     {
-        if (!IsServer || manager != ZDOMan.instance) { if (manager != ZDOMan.instance) Reset(); return; }
+        // Multiplayer clients never initialize the authority's manager. They must
+        // not reset per-world client previews on every frame because it is null.
+        if (!IsServer) return;
+        if (manager != ZDOMan.instance) { Reset(); return; }
         if (Store == null) return;
         Store.Expire(Time.unscaledTime);
         if (Time.unscaledTime < nextPeerCheck) return;
@@ -116,7 +120,7 @@ internal static class Host
         var lease = Store.ActiveLease;
         if (lease != null && lease.Peer != ZNet.GetUID() && ZNet.instance.GetPeer(lease.Peer) == null) Store.Disconnect(lease.Peer);
     }
-    internal static void Reset() { Store = null; state = null; manager = null; wards.Clear(); wardRadii.Clear(); }
+    internal static void Reset() { Store = null; state = null; manager = null; wards.Clear(); wardRadii.Clear(); automationToken = ""; }
 
     internal static IEnumerator Receive(long sender, ZPackage package)
     {
@@ -147,7 +151,7 @@ internal static class Host
                 {
                     result = AccessResult.UnknownChest; reason = "The chest no longer exists on the server.";
                 }
-                else if (!HasAccess(sender, chest))
+                else if (!HasAccess(sender, chest, token == automationToken))
                 {
                     result = AccessResult.AccessDenied; reason = "The server denied access: check your distance and ward permissions.";
                 }
@@ -175,10 +179,14 @@ internal static class Host
                     }
                 }
             }
-            else if (chest != null && chest.GetPrefab() == Plugin.ChestHash && HasAccess(sender, chest))
+            else if (chest != null && chest.GetPrefab() == Plugin.ChestHash && HasAccess(sender, chest, operation == Operation.Peek || operation == Operation.OpenAutomation || token == automationToken && token.Length > 0))
             {
                 Store.Register(chestId.ToString());
-                if (operation == Operation.Open)
+                if (operation == Operation.Peek)
+                {
+                    result = AccessResult.Accepted;
+                }
+                else if (operation == Operation.Open || operation == Operation.OpenAutomation)
                 {
                     if (state.GetByteArray(SpillKey, Array.Empty<byte>()).Length > 0)
                     {
@@ -190,6 +198,7 @@ internal static class Host
                         ReadInventory(Store.Snapshot().Inventory, "stored guild inventory");
                         result = Store.Open(sender, chestId.ToString(), Time.unscaledTime, out var lease);
                         replyToken = lease?.Token ?? "";
+                        if (result == AccessResult.Accepted) automationToken = operation == Operation.OpenAutomation ? replyToken : "";
                     }
                 }
                 else if (operation == Operation.Heartbeat && Store.ActiveLease?.Chest == chestId.ToString())
@@ -224,7 +233,7 @@ internal static class Host
         catch (Exception exception) { throw new InvalidOperationException($"Cannot read {context}: {exception.Message}", exception); }
     }
 
-    private static bool HasAccess(long sender, ZDO chest)
+    private static bool HasAccess(long sender, ZDO chest, bool automation = false)
     {
         long playerId; Vector3 position;
         if (sender == ZNet.GetUID())
@@ -238,7 +247,7 @@ internal static class Host
             if (character == null || character.GetBool(ZDOVars.s_dead)) return false;
             playerId = peer!.m_playerID; position = character.GetPosition();
         }
-        if (Vector3.Distance(position, chest.GetPosition()) > 6f) return false;
+        if (Vector3.Distance(position, chest.GetPosition()) > (automation ? Plugin.AutomationRange.Value : 6f)) return false;
         bool guarded = false, permitted = false;
         // Dedicated servers need ward data from the world, not the list of rendered ward components.
         foreach (var id in wards)

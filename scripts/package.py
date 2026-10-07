@@ -13,6 +13,7 @@ files = {
     'icon.png': ROOT / 'icon.png',
     'LICENSE': ROOT / 'LICENSE',
     'docs/VALIDATION.md': ROOT / 'docs/VALIDATION.md',
+    'docs/COMPATIBILITY.md': ROOT / 'docs/COMPATIBILITY.md',
     'BepInEx/plugins/GuildChest/GuildChest.dll': binary_dir / 'GuildChest.dll',
     'BepInEx/plugins/GuildChest/GuildChest.Core.dll': binary_dir / 'GuildChest.Core.dll',
 }
