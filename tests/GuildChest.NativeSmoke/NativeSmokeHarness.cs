@@ -114,8 +114,10 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
                 Check(prefab != null, "Chest prefab registered");
                 Check(prefab!.GetComponent<Container>().m_width == 8 && prefab!.GetComponent<Container>().m_height == 4, "Chest dimensions");
                 var piece = prefab.GetComponent<Piece>();
-                Check(piece.m_craftingStation.name.StartsWith("forge"), "Forge recipe");
-                Check(piece.m_resources.Length == 3 && piece.m_resources.Sum(req => req.m_amount) == 32, "Recipe costs");
+                Check(piece.m_craftingStation.name.StartsWith("piece_workbench"), "Workbench recipe");
+                var costs = piece.m_resources.ToDictionary(req => req.m_resItem.name, req => req.m_amount);
+                Check(costs.Count == 4 && costs["FineWood"] == 20 && costs["Iron"] == 10 &&
+                    costs["SurtlingCore"] == 2 && costs["Coins"] == 250, "Recipe costs include 250 gold");
                 UnityEngine.Object.Instantiate(prefab, new Vector3(5000, 1000, 5000), Quaternion.identity);
                 UnityEngine.Object.Instantiate(prefab, new Vector3(-5000, 1000, -5000), Quaternion.identity);
                 Check(Store!.ChestCount == 2, "World creation hooks register both chests");

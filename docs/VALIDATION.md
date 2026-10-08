@@ -15,7 +15,7 @@ with this build's assemblies; future 1.x updates need verification.
 - The reference setup succeeds through anonymous SteamCMD; a repeated setup
   skips installed downloads. Package metadata and the 256 × 256 PNG are valid,
   and the release ZIP contains only the intended package files.
-- A native headless Valheim 1.0.16 fixture verifies prefab registration, forge
+- A native headless Valheim 1.0.16 fixture verifies prefab registration, chest
   recipe, dimensions, serialization of 12 iron and a damaged quality-3 iron sword
   with crafter/custom data, and saving the inventory with two distant chests.
 - Restarting that fixture restores both unloaded chest records and their shared
@@ -107,6 +107,11 @@ with this build's assemblies; future 1.x updates need verification.
   references. Four package tests accept a matching build and reject a changed
   manifest, replaced plugin/core DLLs, or a missing build receipt before writing
   an archive. Solution and native-fixture builds have no warnings or errors.
+- Version **1.0.9** requires a workbench and adds 250 gold to the guild chest
+  recipe. The native registration fixture verifies the workbench reference and
+  exact costs: 20 fine wood, 10 iron, 2 surtling cores and 250 coins. Prefab
+  registration, dimensions, item serialization and world saving pass. Release
+  and native-fixture builds have no warnings or errors.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
@@ -194,9 +199,9 @@ Record mode, game build, dependencies, result, and relevant logs for each run.
 These checks require a running client; automated core tests cannot verify UI,
 rendering, controller input, or a multiplayer player's inventory.
 
-- [ ] Solo: guild chest appears in the hammer menu; recipe needs a forge and
-  the correct resources; the model is distinctly blue; vanilla chest materials
-  are unchanged.
+- [ ] Solo: guild chest appears in the hammer menu; recipe needs a workbench,
+  20 fine wood, 10 iron, 2 surtling cores and 250 gold; the model is distinctly
+  blue; vanilla chest materials are unchanged.
 - [ ] Deposit at A, travel far enough to unload A, withdraw at B. Repeat across
   distant islands and with more than two chests.
 - [ ] Drag, quick-transfer, split-stack, swap occupied slots, Take All, Stack All,

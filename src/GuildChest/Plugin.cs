@@ -66,9 +66,10 @@ public sealed class Plugin : BaseUnityPlugin
         }
         var config = new PieceConfig {
             Name = "Guild Chest", Description = "One inventory shared by every guild chest in this world.",
-            PieceTable = "Hammer", CraftingStation = "forge"
+            PieceTable = "Hammer", CraftingStation = "piece_workbench"
         };
         config.AddRequirement("FineWood", 20); config.AddRequirement("Iron", 10); config.AddRequirement("SurtlingCore", 2);
+        config.AddRequirement("Coins", 250);
         PieceManager.Instance.AddPiece(new CustomPiece(prefab, false, config));
 
         var statePrefab = PrefabManager.Instance.CreateEmptyPrefab(StateName);

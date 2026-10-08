@@ -7,8 +7,9 @@ client and the host, with matching Guild Chest versions.
 
 ## Gameplay
 
-- Build a **Guild Chest** with the hammer near a forge, using **20 fine wood,
-  10 iron, and 2 surtling cores**. It resembles a blue-tinted reinforced chest.
+- Build a **Guild Chest** with the hammer near a workbench, using **20 fine wood,
+  10 iron, 2 surtling cores, and 250 gold**. It resembles a blue-tinted reinforced
+  chest.
 - Every guild chest accesses the same **32 slots (8 × 4)**, even across the
   entire map or when other chest locations are unloaded.
 - One player can use the shared inventory at a time. Normal ward permissions
@@ -56,7 +57,7 @@ Linux host. No host .NET SDK or Unity Editor is required.
    bash scripts/dev.sh package
    ```
 
-The release ZIP is written to `artifacts/GuildChest-1.0.8.zip`, visible in the
+The release ZIP is written to `artifacts/GuildChest-1.0.9.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
 and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create restores
 NuGet packages but does not download or update the game automatically.
