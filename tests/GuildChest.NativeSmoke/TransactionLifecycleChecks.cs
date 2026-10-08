@@ -64,7 +64,7 @@ public sealed partial class NativeSmokeHarness
         faultHooks.Patch(AccessTools.Method(host, "Handle"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ObserveCommitRequest)));
         faultHooks.Patch(AccessTools.Method(ClientType.GetNestedType("Transaction", BindingFlags.NonPublic), "Apply"),
             prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(FailPreparation)));
-        faultHooks.Patch(AccessTools.Method(Compat, "RefreshSnapshot"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(FailPreviewRefresh)));
+        faultHooks.Patch(AccessTools.Method(PreviewType, "RefreshSnapshot"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(FailPreviewRefresh)));
         try
         {
             int callbacks = 0;
@@ -150,7 +150,7 @@ public sealed partial class NativeSmokeHarness
                 faultHooks.Patch(method, prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(FailBeforeScope)) { priority = 900 });
                 failScope = true;
                 try { invoke(); } catch (Exception) { }
-                Check(!failScope && (int)AccessTools.Field(Compat, counter).GetValue(null) == 0, "Earlier prefix failure leaves " + counter + " balanced");
+                Check(!failScope && (int)AccessTools.Field(ScopesType, counter).GetValue(null) == 0, "Earlier prefix failure leaves " + counter + " balanced");
             }
             EarlierFault(AccessTools.Method(typeof(Player), "HaveRequirements", new[] { typeof(Piece), typeof(Player.RequirementMode) }),
                 () => player.HaveRequirements(piece, Player.RequirementMode.CanBuild), "PreviewDepth");

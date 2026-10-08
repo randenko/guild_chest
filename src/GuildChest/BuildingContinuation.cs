@@ -19,6 +19,7 @@ internal static class BuildingContinuation
     }
     private static Intent? pending;
     private static bool replaying;
+    private static readonly System.Reflection.MethodInfo updateGhost = AccessTools.Method(typeof(Player), "UpdatePlacementGhost", new[] { typeof(bool) });
     private static GameObject Ghost(Player player) => AccessTools.FieldRefAccess<Player, GameObject>("m_placementGhost")(player);
     internal static void Reset() { pending = null; replaying = false; }
 
@@ -26,7 +27,7 @@ internal static class BuildingContinuation
         !intent.Player.IsDead() && !intent.Player.IsTeleporting() && intent.Player.InPlaceMode() &&
         intent.Player.GetSelectedPiece() == intent.Piece && intent.Player.RightItem == intent.Tool &&
         Vector3.Distance(intent.Player.transform.position, intent.PlayerPosition) <= 0.5f &&
-        Time.unscaledTime - intent.Started <= 30f;
+        Time.unscaledTime - intent.Started <= Protocol.OpenTimeout;
     private static bool Matches(Intent intent)
     {
         if (!MatchesContext(intent)) return false;
@@ -47,7 +48,7 @@ internal static class BuildingContinuation
         var ghost = Ghost(player);
         var tool = player.RightItem;
         if (!player.InPlaceMode() || player.GetSelectedPiece() != piece || !ghost || tool == null) return true;
-        AccessTools.Method(typeof(Player), "UpdatePlacementGhost").Invoke(player, new object[] { true });
+        updateGhost.Invoke(player, new object[] { true });
         if (player.GetPlacementStatus() != Player.PlacementStatus.Valid || !ghost.activeInHierarchy) return true;
         var intent = new Intent {
             Player = player, Piece = piece, Tool = tool,
@@ -55,7 +56,7 @@ internal static class BuildingContinuation
             PlayerPosition = player.transform.position, Started = Time.unscaledTime
         };
         pending = intent;
-        if (StorageCompatibility.Supply(piece.m_resources, 0, 1, false, true, () =>
+        if (MaterialSupply.Supply(piece.m_resources, 0, 1, false, true, () =>
         {
             if (pending == intent) intent.Ready = true;
         })) return false;
@@ -68,7 +69,7 @@ internal static class BuildingContinuation
         if (!takeInput || !MatchesContext(pending) || Hud.IsPieceSelectionVisible()) { Reset(); return; }
         // Inventory changes can recreate the ghost at a temporary default position.
         // Refresh the mouse/controller target before comparing the logical pose.
-        AccessTools.Method(typeof(Player), "UpdatePlacementGhost").Invoke(player, new object[] { false });
+        updateGhost.Invoke(player, new object[] { false });
         if (!Matches(pending) || player.GetPlacementStatus() != Player.PlacementStatus.Valid) { Reset(); return; }
         if (!pending.Ready)
         {

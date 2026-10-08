@@ -4,7 +4,9 @@
     <Nullable>enable</Nullable>
     <Deterministic>true</Deterministic>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <Version>1.0.7</Version>
+    <!-- The package manifest is the single release-version source. -->
+    <GuildChestManifest>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)manifest.json'))</GuildChestManifest>
+    <Version>$([System.Text.RegularExpressions.Regex]::Match($(GuildChestManifest), '&quot;version_number&quot;\s*:\s*&quot;([^&quot;]+)&quot;').Groups[1].Value)</Version>
     <ValheimManagedDir Condition="'$(ValheimManagedDir)' == ''">$(MSBuildThisFileDirectory).local/valheim-server/valheim_server_Data/Managed</ValheimManagedDir>
     <ModDependenciesDir>$(MSBuildThisFileDirectory).local/dependencies</ModDependenciesDir>
   </PropertyGroup>

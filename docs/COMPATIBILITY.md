@@ -174,5 +174,12 @@ multiplayer checks.
 - [AzuCraftyBoxes 1.8.27](https://valheim.hexium.gg/mods/Azumatt/AzuCraftyBoxes)
 
 Optional hooks use reflection; neither third-party DLL is bundled or required.
-Future mod versions can change their internal methods. Missing hooks are logged,
-and unadapted writes remain blocked rather than using vanilla local storage.
+Each adapter resolves and validates its required bindings before installing any
+hooks. A missing member or unsupported signature disables that adapter and logs
+the reason. A failed hook installation removes its partial hooks. Inventory
+guards remain active, and ordinary upstream entry points remain available.
+
+Bindings and wrapper lookups are cached; upstream configuration values are still
+read when used. AutoStore's staged inventory scope restores the original player
+and chest inventories even when its rules throw. See
+[code structure](ARCHITECTURE.md) for the adapter and lifecycle boundaries.

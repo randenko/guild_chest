@@ -8,8 +8,6 @@ using UnityEngine;
 
 namespace GuildChest;
 
-internal enum Operation { Open, Commit, Heartbeat, Close, Peek, OpenAutomation }
-
 internal static class Host
 {
     private const string ItemsKey = "gc_inventory_v1";
@@ -130,7 +128,7 @@ internal static class Host
     }
     private static void Handle(long sender, ZPackage package)
     {
-        if (!IsServer || Store == null || state == null || package.Size() > InventoryCodec.MaxBytes * 3 + 4096) return;
+        if (!IsServer || Store == null || state == null || package.Size() > InventoryCodec.MaxBytes * 3 + Protocol.HeaderAllowance) return;
         if (sender != ZNet.GetUID() && ZNet.instance.GetPeer(sender) == null) return;
         var operation = (Operation)package.ReadInt();
         var chestId = package.ReadZDOID(); string token = package.ReadString(); long sequence = package.ReadLong();
@@ -221,13 +219,13 @@ internal static class Host
         if (result != AccessResult.Accepted)
             Plugin.LogWarning($"{operation} rejected: {result}; peer={sender}, chest={chestId}, request={sequence}. {reason}");
         var snapshot = Store.Snapshot();
-        var reply = new ZPackage(); reply.Write((int)operation); reply.Write(chestId); reply.Write(replyToken); reply.Write(sequence);
+        var reply = Protocol.Header(operation, chestId, replyToken, sequence);
         reply.Write((int)result); reply.Write(snapshot.Revision); reply.Write(snapshot.Inventory);
         reply.Write(result == AccessResult.Accepted ? "" : reason);
         Plugin.ReplyRpc.SendPackage(sender, reply);
     }
 
-    private static Inventory ReadInventory(byte[] bytes, string context, int width = 8, int height = 4)
+    private static Inventory ReadInventory(byte[] bytes, string context, int width = Protocol.Width, int height = Protocol.Height)
     {
         try { return InventoryCodec.Read(bytes, width, height); }
         catch (Exception exception) { throw new InvalidOperationException($"Cannot read {context}: {exception.Message}", exception); }

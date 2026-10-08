@@ -38,7 +38,6 @@ internal static class Client
     private static bool deferredDeath;
     private static Transaction? transaction;
     private static bool finishing, resetting;
-    private const float OpenTimeout = 30f, HeartbeatInterval = 5f, RetryInterval = 2f;
     internal static bool Applying;
     internal static bool Opening => opening != null;
 
@@ -164,12 +163,8 @@ internal static class Client
         }
     }
 
-    private static ZPackage Header(Operation operation, string sessionToken, long requestSequence, ZDOID? target = null)
-    {
-        var package = new ZPackage(); package.Write((int)operation); package.Write(target ?? chestId);
-        package.Write(sessionToken); package.Write(requestSequence); return package;
-    }
-    private static void Send(Operation operation, string sessionToken, long requestSequence, ZDOID? target = null) => Plugin.RequestRpc.SendPackage(Plugin.ServerId, Header(operation, sessionToken, requestSequence, target));
+    private static void Send(Operation operation, string sessionToken, long requestSequence, ZDOID? target = null)
+        => Plugin.RequestRpc.SendPackage(Plugin.ServerId, Protocol.Header(operation, target ?? chestId, sessionToken, requestSequence));
     private static void ReleaseGrant(ZDOID id, string receivedToken)
     {
         if (receivedToken.Length != 0 && receivedToken != token && (opening == null || opening.Id != id))
@@ -198,11 +193,11 @@ internal static class Client
     }
     private static void Handle(long sender, ZPackage package)
     {
-        if (!ZNet.instance || sender != Plugin.ServerId || package.Size() > InventoryCodec.MaxBytes + 4096) return;
+        if (!ZNet.instance || sender != Plugin.ServerId || package.Size() > InventoryCodec.MaxBytes + Protocol.HeaderAllowance) return;
         var operation = (Operation)package.ReadInt(); var id = package.ReadZDOID(); string receivedToken = package.ReadString(); long requestSequence = package.ReadLong();
         var result = (AccessResult)package.ReadInt(); long receivedRevision = package.ReadLong(); byte[] bytes = package.ReadByteArray();
         string reason = package.GetPos() < package.Size() ? package.ReadString() : result.ToString();
-        if (operation == Operation.Peek) { StorageCompatibility.ReceiveSnapshot(id, requestSequence, result, receivedRevision, bytes); return; }
+        if (operation == Operation.Peek) { StoragePreview.ReceiveSnapshot(id, requestSequence, result, receivedRevision, bytes); return; }
         if (operation == Operation.Open || operation == Operation.OpenAutomation)
         {
             if (opening == null || id != opening.Id || requestSequence != opening.Sequence ||
@@ -234,9 +229,9 @@ internal static class Client
                 Plugin.Message($"Guild Chest: {exception.Message}"); return;
             }
             chestId = id; Chest = requested.Chest; token = receivedToken; sequence = 0; revision = receivedRevision;
-            View = decoded; lastReply = Time.unscaledTime; nextHeartbeat = lastReply + HeartbeatInterval;
-            StorageCompatibility.Protect(View);
-            AccessTools.FieldRefAccess<Container, Inventory>("m_inventory")(Chest) = View;
+            View = decoded; lastReply = Time.unscaledTime; nextHeartbeat = lastReply + Protocol.HeartbeatInterval;
+            InventoryAccess.Protect(View);
+            InventoryAccess.ContainerInventory(Chest) = View;
             if (requested.Action == QuickAction.Automation)
             {
                 closeWanted = true;
@@ -281,14 +276,14 @@ internal static class Client
                 try { finished.Lifecycle.TryApply(finished.Apply); }
                 catch (Exception exception)
                 {
-                    Plugin.Error(exception); nextRetry = Time.unscaledTime + RetryInterval;
+                    Plugin.Error(exception); nextRetry = Time.unscaledTime + Protocol.RetryInterval;
                     return; // Retry preparation locally, never resend an accepted commit.
                 }
                 revision = finished.ReplyRevision;
                 Applying = true;
                 finished.Notify();
                 if (!Effect(() => { if (View != null) InventoryCodec.Replace(View, InventoryCodec.Read(finished.ReplyInventory)); })) closeWanted = true;
-                if (!Effect(() => StorageCompatibility.RefreshSnapshot(finished.ReplyInventory, finished.ReplyRevision))) closeWanted = true;
+                if (!Effect(() => StoragePreview.RefreshSnapshot(finished.ReplyInventory, finished.ReplyRevision))) closeWanted = true;
             }
             else
             {
@@ -337,19 +332,19 @@ internal static class Client
         if (!ZNet.instance || !ZNetScene.instance) return;
         float now = Time.unscaledTime;
         if (opening != null && !Valid(opening)) CancelOpen("The player or guild chest is no longer available.");
-        else if (opening != null && now - opening.Started > OpenTimeout) CancelOpen("Guild Chest host did not respond.");
+        else if (opening != null && now - opening.Started > Protocol.OpenTimeout) CancelOpen("Guild Chest host did not respond.");
         if (!HasSession) return;
-        if (now >= nextHeartbeat) { Effect(() => Send(Operation.Heartbeat, token, sequence)); nextHeartbeat = now + HeartbeatInterval; }
+        if (now >= nextHeartbeat) { Effect(() => Send(Operation.Heartbeat, token, sequence)); nextHeartbeat = now + Protocol.HeartbeatInterval; }
         if (Pending)
         {
             if (now >= nextRetry)
             {
-                var current = transaction!; nextRetry = now + RetryInterval;
+                var current = transaction!; nextRetry = now + Protocol.RetryInterval;
                 if (current.Lifecycle.Phase == TransferPhase.Accepted || current.Lifecycle.Phase == TransferPhase.Applied) Finish(current);
                 else Effect(() => Plugin.RequestRpc.SendPackage(Plugin.ServerId, new ZPackage(current.Request)));
             }
         }
-        else if (!Chest || !Player.m_localPlayer || Player.m_localPlayer.IsDead() || now - lastReply > 35 ||
+        else if (!Chest || !Player.m_localPlayer || Player.m_localPlayer.IsDead() || now - lastReply > Protocol.SessionTimeout ||
             Vector3.Distance(Chest.transform.position, Player.m_localPlayer.transform.position) > 4f) Close();
     }
 
@@ -361,10 +356,10 @@ internal static class Client
         byte[] player = InventoryCodec.Save(candidate.PlayerStage);
         if (shared.Length > InventoryCodec.MaxBytes || player.Length > InventoryCodec.MaxBytes) throw new InvalidOperationException("This transfer exceeds the supported inventory size.");
         candidate.Sequence = ++sequence;
-        var package = Header(Operation.Commit, token, candidate.Sequence); package.Write(revision);
+        var package = Protocol.Header(Operation.Commit, chestId, token, candidate.Sequence); package.Write(revision);
         package.Write(candidate.PlayerStage.GetWidth()); package.Write(candidate.PlayerStage.GetHeight());
         package.Write(candidate.PlayerBefore); package.Write(shared); package.Write(player);
-        candidate.Request = package.GetArray(); transaction = candidate; nextRetry = Time.unscaledTime + RetryInterval;
+        candidate.Request = package.GetArray(); transaction = candidate; nextRetry = Time.unscaledTime + Protocol.RetryInterval;
         Effect(ClearDrag); Effect(() => Plugin.RequestRpc.SendPackage(Plugin.ServerId, new ZPackage(candidate.Request)));
         return true;
     }

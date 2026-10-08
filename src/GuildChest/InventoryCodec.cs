@@ -7,14 +7,14 @@ namespace GuildChest;
 
 internal static class InventoryCodec
 {
-    internal const int MaxBytes = 1024 * 1024;
+    internal const int MaxBytes = Protocol.MaxBytes;
     internal static byte[] Save(Inventory inventory)
     {
         var package = new ZPackage(); inventory.Save(package); return package.GetArray();
     }
-    internal static Inventory Empty(int width = 8, int height = 4) => new("Guild Chest", null, width, height);
+    internal static Inventory Empty(int width = Protocol.Width, int height = Protocol.Height) => new("Guild Chest", null, width, height);
 
-    internal static Inventory Read(byte[] bytes, int width = 8, int height = 4)
+    internal static Inventory Read(byte[] bytes, int width = Protocol.Width, int height = Protocol.Height)
     {
         var result = Empty(width, height);
         foreach (var entry in ReadEntries(bytes, width, height))
@@ -80,7 +80,8 @@ internal static class InventoryCodec
     {
         target.GetAllItems().Clear(); target.GetAllItems().AddRange(source.GetAllItems().Select(item => item.Clone())); Changed(target);
     }
-    internal static void Changed(Inventory inventory) => AccessTools.Method(typeof(Inventory), "Changed").Invoke(inventory, new object[] { false, false });
+    private static readonly System.Reflection.MethodInfo changed = AccessTools.Method(typeof(Inventory), "Changed", new[] { typeof(bool), typeof(bool) });
+    internal static void Changed(Inventory inventory) => changed.Invoke(inventory, new object[] { false, false });
 
     // Stacking follows vanilla's rules, including the destination stack's metadata.
     internal static bool Conserves(Inventory oldShared, byte[] oldPlayer, Inventory newShared, byte[] newPlayer, int width, int height)

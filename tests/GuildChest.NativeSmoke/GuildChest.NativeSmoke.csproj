@@ -1,14 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net48</TargetFramework></PropertyGroup>
+  <Import Project="../../build/ValheimReferences.props" />
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
     <ProjectReference Include="../../src/GuildChest/GuildChest.csproj" />
-    <Reference Include="BepInEx"><HintPath>$(ModDependenciesDir)/BepInEx.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="0Harmony"><HintPath>$(ModDependenciesDir)/0Harmony.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="assembly_valheim"><HintPath>$(ValheimManagedDir)/assembly_valheim.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="assembly_utils"><HintPath>$(ValheimManagedDir)/assembly_utils.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine"><HintPath>$(ValheimManagedDir)/UnityEngine.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.CoreModule"><HintPath>$(ValheimManagedDir)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="UnityEngine.PhysicsModule"><HintPath>$(ValheimManagedDir)/UnityEngine.PhysicsModule.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
 </Project>

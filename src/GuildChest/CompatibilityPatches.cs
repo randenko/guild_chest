@@ -9,7 +9,7 @@ namespace GuildChest;
 [HarmonyPatch(typeof(Container), "Awake")]
 internal static class GuildInventoryRegistrationPatch
 {
-    private static void Postfix(Container __instance) => StorageCompatibility.Track(__instance);
+    private static void Postfix(Container __instance) => InventoryAccess.Track(__instance);
 }
 
 [HarmonyPatch(typeof(Container), nameof(Container.GetInventory))]
@@ -18,7 +18,7 @@ internal static class GuildInventoryAccessPatch
     private static bool Prefix(Container __instance, ref Inventory __result)
     {
         if (!Plugin.IsGuild(__instance)) return true;
-        __result = StorageCompatibility.InventoryFor(__instance); return false;
+        __result = InventoryAccess.InventoryFor(__instance); return false;
     }
 }
 
@@ -27,7 +27,7 @@ internal static class AutomationOwnerPatch
 {
     private static bool Prefix(ZNetView __instance, ref bool __result)
     {
-        if (!StorageCompatibility.ScopedChest || StorageCompatibility.ScopedChest!.GetComponent<ZNetView>() != __instance) return true;
+        if (!InventoryAccess.ScopedChest || InventoryAccess.ScopedChest!.GetComponent<ZNetView>() != __instance) return true;
         __result = true; return false;
     }
 }
@@ -37,8 +37,8 @@ internal static class GuildUiInventoryScopePatch
 {
     private static IEnumerable<MethodBase> TargetMethods() => new[] { "Show", "UpdateContainer", "UpdateContainerWeight" }
         .Select(name => AccessTools.Method(typeof(InventoryGui), name));
-    private static void Prefix(ref bool __state) { __state = true; StorageCompatibility.UiDepth++; }
-    private static void Finalizer(bool __state) { if (__state) StorageCompatibility.UiDepth--; }
+    private static void Prefix(ref bool __state) => StorageScopes.Enter(StorageScope.Ui, ref __state);
+    private static void Finalizer(bool __state) => StorageScopes.Exit(StorageScope.Ui, __state);
 }
 
 [HarmonyPatch]
@@ -53,15 +53,8 @@ internal static class CraftyPreviewScopePatch
         yield return AccessTools.Method(typeof(Hud), "SetupPieceInfo");
     }
     [HarmonyPriority(Priority.First)]
-    private static void Prefix(ref bool __state)
-    {
-        __state = true;
-        if (StorageCompatibility.PreviewDepth++ == 0) StorageCompatibility.InvalidateCounts();
-    }
-    private static void Finalizer(bool __state)
-    {
-        if (__state && --StorageCompatibility.PreviewDepth == 0) StorageCompatibility.InvalidateCounts();
-    }
+    private static void Prefix(ref bool __state) => StorageScopes.Enter(StorageScope.Preview, ref __state);
+    private static void Finalizer(bool __state) => StorageScopes.Exit(StorageScope.Preview, __state);
 }
 
 [HarmonyPatch(typeof(InventoryGui), "DoCrafting")]
@@ -77,7 +70,7 @@ internal static class GuildCraftingSupplyPatch
         int amount = multi ? AccessTools.FieldRefAccess<InventoryGui, int>("m_multiCraftAmount")(__instance) : 1;
         var station = player.GetCurrentCraftingStation();
         if (recipe && !player.NoCostCheat() && !ZoneSystem.instance.GetGlobalKey(GlobalKeys.NoCraftCost) &&
-            StorageCompatibility.SupplyCrafting(recipe, upgrade == null ? 1 : upgrade.m_quality + 1, amount, () =>
+            MaterialSupply.SupplyCrafting(recipe, upgrade == null ? 1 : upgrade.m_quality + 1, amount, () =>
             {
                 if (!__instance || !player || player.IsDead() || player.IsTeleporting() || player.GetCurrentCraftingStation() != station) return;
                 if (AccessTools.FieldRefAccess<InventoryGui, Recipe>("m_craftRecipe")(__instance) != recipe ||
@@ -86,9 +79,9 @@ internal static class GuildCraftingSupplyPatch
                     (multi && AccessTools.FieldRefAccess<InventoryGui, int>("m_multiCraftAmount")(__instance) != amount)) return;
                 AccessTools.Method(typeof(InventoryGui), "DoCrafting").Invoke(__instance, new object[] { player });
             })) return false;
-        __state = true; StorageCompatibility.ConsumptionDepth++; StorageCompatibility.InvalidateCounts(); return true;
+        StorageScopes.Enter(StorageScope.Consumption, ref __state); return true;
     }
-    private static void Finalizer(bool __state) { if (__state) { StorageCompatibility.ConsumptionDepth--; StorageCompatibility.InvalidateCounts(); } }
+    private static void Finalizer(bool __state) => StorageScopes.Exit(StorageScope.Consumption, __state);
 }
 
 [HarmonyPatch(typeof(Player), nameof(Player.TryPlacePiece))]
@@ -114,19 +107,29 @@ internal static class GuildBuildingResumePatch
 [HarmonyPatch(typeof(Player), nameof(Player.ConsumeResources))]
 internal static class GuildConsumptionScopePatch
 {
-    private static void Prefix(ref bool __state) { __state = true; StorageCompatibility.ConsumptionDepth++; StorageCompatibility.InvalidateCounts(); }
-    private static void Finalizer(bool __state) { if (__state) { StorageCompatibility.ConsumptionDepth--; StorageCompatibility.InvalidateCounts(); } }
+    private static void Prefix(ref bool __state) => StorageScopes.Enter(StorageScope.Consumption, ref __state);
+    private static void Finalizer(bool __state) => StorageScopes.Exit(StorageScope.Consumption, __state);
 }
 
 // Guard native inventory APIs too: third-party writers must use a staged transfer.
 // Methods returning ItemData, bool, int and void need distinct Harmony signatures.
 internal static class GuardedInventoryMethods
 {
-    internal static bool Blocked(Inventory inventory, object[] arguments) => StorageCompatibility.Blocked(inventory) ||
-        arguments.OfType<Inventory>().Any(StorageCompatibility.Blocked);
-    internal static IEnumerable<MethodBase> WithReturn(Type result) => typeof(Inventory)
+    private static readonly HashSet<string> names = new() {
+        "AddItem", "CanAddItem", "MoveAll", "StackAll", "MoveItemToThis", "RemoveItem", "RemoveOneItem",
+        "RemoveAll", "RemoveUnequipped", "Load", "MoveInventoryToGrave", "HaveEmptySlot"
+    };
+    private static readonly MethodInfo[] methods = typeof(Inventory)
         .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-        .Where(method => method.ReturnType == result && new[] { "AddItem", "CanAddItem", "MoveAll", "StackAll", "MoveItemToThis", "RemoveItem", "RemoveOneItem", "RemoveAll", "RemoveUnequipped", "Load", "MoveInventoryToGrave", "HaveEmptySlot" }.Contains(method.Name));
+        .Where(method => names.Contains(method.Name)).ToArray();
+    internal static bool Blocked(Inventory inventory, object[] arguments)
+    {
+        if (InventoryAccess.Blocked(inventory)) return true;
+        foreach (var argument in arguments)
+            if (argument is Inventory source && InventoryAccess.Blocked(source)) return true;
+        return false;
+    }
+    internal static IEnumerable<MethodBase> WithReturn(Type result) => methods.Where(method => method.ReturnType == result);
 }
 [HarmonyPatch]
 internal static class GuildInventoryBoolGuard

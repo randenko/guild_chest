@@ -13,13 +13,13 @@ namespace GuildChest;
 
 [BepInPlugin(Id, "Guild Chest", ModVersion)]
 [BepInDependency(Jotunn.Main.ModGuid)]
-[BepInDependency("Azumatt.AzuAutoStore", BepInDependency.DependencyFlags.SoftDependency)]
-[BepInDependency("Azumatt.AzuCraftyBoxes", BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(AutoStoreAdapter.PluginId, BepInDependency.DependencyFlags.SoftDependency)]
+[BepInDependency(CraftyBoxesAdapter.PluginId, BepInDependency.DependencyFlags.SoftDependency)]
 [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Patch)]
 public sealed class Plugin : BaseUnityPlugin
 {
     public const string Id = "com.randenko.guildchest";
-    public const string ModVersion = "1.0.7";
+    public const string ModVersion = BuildVersion.Value;
     public const string ChestName = "GuildChest";
     internal const string StateName = "GuildChestWorldState";
     internal static readonly int ChestHash = ChestName.GetStableHashCode();
@@ -35,9 +35,9 @@ public sealed class Plugin : BaseUnityPlugin
         Instance = this;
         AutomationRange = Config.Bind("Compatibility", "Automation range", 20f,
             new ConfigDescription("Maximum player distance for storage-mod transfers and resource previews. The server enforces its value.", new AcceptableValueRange<float>(1f, 100f)));
-        RequestRpc = NetworkManager.Instance.AddRPC("GuildChestRequestsV1", Host.Receive, IgnoreRequest);
+        RequestRpc = NetworkManager.Instance.AddRPC(Protocol.RequestRpc, Host.Receive, IgnoreRequest);
         // A host player's replies are delivered on the server too, so both roles must handle responses.
-        ReplyRpc = NetworkManager.Instance.AddRPC("GuildChestRepliesV1", Client.Receive, Client.Receive);
+        ReplyRpc = NetworkManager.Instance.AddRPC(Protocol.ReplyRpc, Client.Receive, Client.Receive);
         PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
         harmony = new Harmony(Id);
         harmony.PatchAll(typeof(Plugin).Assembly);
@@ -51,7 +51,7 @@ public sealed class Plugin : BaseUnityPlugin
         if (!prefab) throw new InvalidOperationException("Reinforced chest prefab is unavailable.");
         var container = prefab.GetComponent<Container>();
         container.m_name = "Guild Chest";
-        container.m_width = 8; container.m_height = 4;
+        container.m_width = Protocol.Width; container.m_height = Protocol.Height;
         container.m_privacy = Container.PrivacySetting.Public;
         container.m_checkGuardStone = true;
         container.m_autoDestroyEmpty = false;

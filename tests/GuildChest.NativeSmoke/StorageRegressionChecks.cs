@@ -12,7 +12,9 @@ public sealed partial class NativeSmokeHarness
 {
     private static float peekDelay, openDelay;
     private static bool dropNextPeek;
-    private static Type Compat => typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.StorageCompatibility")!;
+    private static Type PreviewType => typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.StoragePreview")!;
+    private static Type ScopesType => typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.StorageScopes")!;
+    private static Type SupplyType => typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.MaterialSupply")!;
     private static Type ClientType => typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.Client")!;
     private static Type AutoFunctions => Chainloader.PluginInfos["Azumatt.AzuAutoStore"].Instance.GetType().Assembly.GetType("AzuAutoStore.Util.Functions")!;
     private static Type AutoBoxes => AutoFunctions.Assembly.GetType("AzuAutoStore.Util.Boxes")!;
@@ -216,11 +218,11 @@ public sealed partial class NativeSmokeHarness
     }
     private IEnumerator PreviewRegressions(Player player, Container chest, Container second)
     {
-        void ForcePoll() { AccessTools.Field(Compat, "nextPeek").SetValue(null, 0f); AccessTools.Method(Compat, "Tick").Invoke(null, null); }
-        long Pending() => (long)AccessTools.Field(Compat, "pendingPeek").GetValue(null);
-        Inventory? Snapshot() => AccessTools.Field(Compat, "snapshot").GetValue(null) as Inventory;
-        long Revision() => (long)AccessTools.Field(Compat, "snapshotRevision").GetValue(null);
-        try { AccessTools.Method(Compat, "Reset").Invoke(null, null); peekDelay = 1.2f; ForcePoll(); Check(Pending() != 0, "Slow Peek in flight"); }
+        void ForcePoll() { AccessTools.Field(PreviewType, "nextPeek").SetValue(null, 0f); AccessTools.Method(PreviewType, "Tick").Invoke(null, null); }
+        long Pending() => (long)AccessTools.Field(PreviewType, "pendingPeek").GetValue(null);
+        Inventory? Snapshot() => AccessTools.Field(PreviewType, "snapshot").GetValue(null) as Inventory;
+        long Revision() => (long)AccessTools.Field(PreviewType, "snapshotRevision").GetValue(null);
+        try { AccessTools.Method(PreviewType, "Reset").Invoke(null, null); peekDelay = 1.2f; ForcePoll(); Check(Pending() != 0, "Slow Peek in flight"); }
         catch (Exception exception) { Fail(exception); yield break; }
         yield return new WaitForSeconds(1.4f);
         try { Check(Snapshot() != null, "First 1.2-second Peek reply accepted"); }
@@ -234,7 +236,7 @@ public sealed partial class NativeSmokeHarness
             piece.m_resources = new[] { new Piece.Requirement { m_resItem = ObjectDB.instance.GetItemPrefab("Iron").GetComponent<ItemDrop>(), m_amount = 1 } };
             Check(player.HaveRequirements(piece, Player.RequirementMode.CanBuild), "Slow preview still funds native build requirement check");
             // Force a preview of the pre-commit revision, then commit before it arrives.
-            AccessTools.Field(Compat, "pendingPeek").SetValue(null, 0L); ForcePoll();
+            AccessTools.Field(PreviewType, "pendingPeek").SetValue(null, 0L); ForcePoll();
             Add(player.GetInventory(), "Iron", 1);
             Check(GuildChestStorage.TryTransfer(chest, (personal, shared) => shared.StackAll(personal), (ok, _) => completed = ok), "Commit while an old preview travels");
         }
@@ -243,32 +245,32 @@ public sealed partial class NativeSmokeHarness
         try
         {
             Check(completed == true && Revision() == Store!.Snapshot().Revision && Snapshot()!.CountItems("$item_iron") == Decode(Store.Snapshot().Inventory).CountItems("$item_iron"), "Old Peek cannot overwrite ACK-confirmed stock");
-            peekDelay = 0; AccessTools.Field(Compat, "pendingPeek").SetValue(null, 0L); dropNextPeek = true; ForcePoll();
-            long expired = Pending(); var id = (ZDOID)AccessTools.Field(Compat, "peekChest").GetValue(null);
+            peekDelay = 0; AccessTools.Field(PreviewType, "pendingPeek").SetValue(null, 0L); dropNextPeek = true; ForcePoll();
+            long expired = Pending(); var id = (ZDOID)AccessTools.Field(PreviewType, "peekChest").GetValue(null);
             Check(expired != 0, "Dropped Peek remains pending");
-            AccessTools.Field(Compat, "peekSentTime").SetValue(null, Time.unscaledTime - 11); ForcePoll();
-            Check((long)AccessTools.Field(Compat, "peekSequence").GetValue(null) > expired && Snapshot() != null, "Timed-out Peek retries and refreshes stock");
+            AccessTools.Field(PreviewType, "peekSentTime").SetValue(null, Time.unscaledTime - 11); ForcePoll();
+            Check((long)AccessTools.Field(PreviewType, "peekSequence").GetValue(null) > expired && Snapshot() != null, "Timed-out Peek retries and refreshes stock");
             var snapshot = Snapshot();
-            AccessTools.Method(Compat, "ReceiveSnapshot").Invoke(null, new object[] { id, expired, AccessResult.Accepted, 0L, Array.Empty<byte>() });
+            AccessTools.Method(PreviewType, "ReceiveSnapshot").Invoke(null, new object[] { id, expired, AccessResult.Accepted, 0L, Array.Empty<byte>() });
             Check(ReferenceEquals(snapshot, Snapshot()), "Expired reply ignored before decoding");
-            AccessTools.Method(Compat, "Reset").Invoke(null, null);
-            AccessTools.Method(Compat, "ReceiveSnapshot").Invoke(null, new object[] { id, expired, AccessResult.Accepted, 0L, Array.Empty<byte>() });
+            AccessTools.Method(PreviewType, "Reset").Invoke(null, null);
+            AccessTools.Method(PreviewType, "ReceiveSnapshot").Invoke(null, new object[] { id, expired, AccessResult.Accepted, 0L, Array.Empty<byte>() });
             Check(Snapshot() == null && Pending() == 0, "World preview reset rejects late replies");
             peekDelay = 1.2f; ForcePoll();
         }
         catch (Exception exception) { Fail(exception); yield break; }
-        var original = (Container)AccessTools.Field(Compat, "snapshotChest").GetValue(null);
+        var original = (Container)AccessTools.Field(PreviewType, "snapshotChest").GetValue(null);
         var originalPosition = original.transform.position;
         try
         {
             original.transform.position = player.transform.position + Vector3.right * 30; ForcePoll();
-            Check(!ReferenceEquals(AccessTools.Field(Compat, "snapshotChest").GetValue(null), original) && Snapshot() == null, "Changing access point invalidates pending preview");
+            Check(!ReferenceEquals(AccessTools.Field(PreviewType, "snapshotChest").GetValue(null), original) && Snapshot() == null, "Changing access point invalidates pending preview");
         }
         catch (Exception exception) { Fail(exception); yield break; }
         yield return new WaitForSeconds(1.4f);
         try
         {
-            Check(Snapshot() != null && !ReferenceEquals(AccessTools.Field(Compat, "snapshotChest").GetValue(null), original), "Late old-chest reply cannot replace new-chest preview");
+            Check(Snapshot() != null && !ReferenceEquals(AccessTools.Field(PreviewType, "snapshotChest").GetValue(null), original), "Late old-chest reply cannot replace new-chest preview");
             original.transform.position = originalPosition; peekDelay = 0; ForcePoll();
             Logger.LogInfo("NATIVE_SMOKE_PREVIEW_POLLING_PASSED");
         }

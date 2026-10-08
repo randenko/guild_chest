@@ -56,7 +56,7 @@ Linux host. No host .NET SDK or Unity Editor is required.
    bash scripts/dev.sh package
    ```
 
-The release ZIP is written to `artifacts/GuildChest-1.0.7.zip`, visible in the
+The release ZIP is written to `artifacts/GuildChest-1.0.8.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
 and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create restores
 NuGet packages but does not download or update the game automatically.
@@ -97,6 +97,11 @@ bash scripts/dev.sh setup --update
 Normal builds never invoke SteamCMD. The original game assemblies are referenced
 directly; Harmony accesses the few private fields and methods needed by the mod.
 No publicizer or proprietary assemblies are committed.
+
+See [code structure](docs/ARCHITECTURE.md) for module responsibilities and adapter
+boundaries. Change `version_number` in `manifest.json` to set the release version;
+the build generates the plugin constant and assembly versions. Packaging checks
+the build receipt against both DLLs and rejects stale or replaced binaries.
 
 ## Install and test in Valheim
 

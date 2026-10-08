@@ -294,7 +294,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
     private IEnumerator RunCompatibility(Player player, Container chest)
     {
         var assembly = typeof(GuildChest.Plugin).Assembly;
-        var compat = assembly.GetType("GuildChest.StorageCompatibility")!;
+        var compat = assembly.GetType("GuildChest.StoragePreview")!;
         bool Pending() => (bool)assembly.GetType("GuildChest.Client")!.GetProperty("Pending", Flags)!.GetValue(null);
         var auto = BepInEx.Bootstrap.Chainloader.PluginInfos["Azumatt.AzuAutoStore"].Instance.GetType().Assembly;
         var crafty = BepInEx.Bootstrap.Chainloader.PluginInfos["Azumatt.AzuCraftyBoxes"].Instance.GetType().Assembly;
@@ -319,6 +319,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
             AccessTools.Method(auto.GetType("AzuAutoStore.Util.Boxes"), "AddContainer").Invoke(null, new object[] { second });
             AccessTools.Method(crafty.GetType("AzuCraftyBoxes.Util.Functions.Boxes"), "AddContainer").Invoke(null, new object[] { chest });
             AccessTools.Method(crafty.GetType("AzuCraftyBoxes.Util.Functions.Boxes"), "AddContainer").Invoke(null, new object[] { second });
+            VerifyAdapterBindings(player, chest, second);
             Check(chest.GetInventory().GetEmptySlots() == 0, "Unadapted guild inventory exposes no writable capacity");
             var ore = ObjectDB.instance.GetItemPrefab("Iron").GetComponent<ItemDrop>().m_itemData.Clone();
             ore.m_dropPrefab = ObjectDB.instance.GetItemPrefab("Iron");
@@ -362,10 +363,10 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
             Check(chest.GetComponent(auto.GetType("AzuAutoStore.Util.HighLightChest")) || second.GetComponent(auto.GetType("AzuAutoStore.Util.HighLightChest")), "AutoStore's configured highlight created");
             var a = AccessTools.Method(craftyWrapper, "Create").Invoke(null, new object[] { chest });
             var b = AccessTools.Method(craftyWrapper, "Create").Invoke(null, new object[] { second });
-            compat.GetField("PreviewDepth", Flags)!.SetValue(null, 1);
+            ScopesType.GetField("PreviewDepth", Flags)!.SetValue(null, 1);
             int count = (int)AccessTools.Method(craftyWrapper, "ItemCount").Invoke(a, new object[] { "$item_iron" }) +
                 (int)AccessTools.Method(craftyWrapper, "ItemCount").Invoke(b, new object[] { "$item_iron" });
-            compat.GetField("PreviewDepth", Flags)!.SetValue(null, 0);
+            ScopesType.GetField("PreviewDepth", Flags)!.SetValue(null, 0);
             Check(count == 15, "Crafty counts shared resources once across nearby guild aliases");
             buildPiece = new GameObject("GuildChestSmokeBuild").AddComponent<Piece>();
             buildPiece.m_name = "GuildChestSmokeBuild"; buildPiece.m_description = "Fixture";
@@ -381,7 +382,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
             Check(player.HaveRequirements(buildPiece, Player.RequirementMode.CanBuild), "Actual hammer CanBuild gate sees guild-only materials");
             // Exercise generic resource staging separately; the real hammer loop
             // and automatic continuation are exercised with the portal below.
-            compat.GetMethod("Supply", Flags)!.Invoke(null, new object[] { buildPiece.m_resources, 0, 1, false, true, (Action)(() => { }) });
+            SupplyType.GetMethod("Supply", Flags)!.Invoke(null, new object[] { buildPiece.m_resources, 0, 1, false, true, (Action)(() => { }) });
             if (Pending()) Check(player.GetInventory().CountItems("$item_iron") == 0, "Building materials remain staged pending ACK");
         }
         catch (Exception exception) { Fail(exception); yield break; }
@@ -434,7 +435,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
     }
     private IEnumerator RunPortal(Player player, Container chest)
     {
-        var compat = typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.StorageCompatibility")!;
+        var compat = typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.StoragePreview")!;
         var portal = ZNetScene.instance.GetPrefab("portal_wood").GetComponent<Piece>();
         var hash = "portal_wood".GetStableHashCode();
         int before = Objects.Count(zdo => zdo.GetPrefab() == hash);
@@ -516,7 +517,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
             AccessTools.Method(typeof(Player), "UpdatePlacement").Invoke(player, new object[] { true, 0.02f });
             Check(Objects.Count(zdo => zdo.GetPrefab() == hash) == before + 1, "Following update does not replay the completed click");
             Check(buildAgainMessages == 0, "No resource-ready or re-click message displayed");
-            Check((int)compat.GetField("PreviewDepth", Flags)!.GetValue(null) == 0, "Preview scopes balanced after build checks");
+            Check((int)ScopesType.GetField("PreviewDepth", Flags)!.GetValue(null) == 0, "Preview scopes balanced after build checks");
             foreach (var requirement in portal.m_resources)
             {
                 var item = requirement.m_resItem.m_itemData.Clone(); item.m_dropPrefab = requirement.m_resItem.gameObject; item.m_stack = requirement.m_amount;

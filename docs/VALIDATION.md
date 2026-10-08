@@ -10,7 +10,8 @@ with this build's assemblies; future 1.x updates need verification.
 - The dev container image builds successfully and runs the solution as the
   non-root `vscode` user with .NET SDK 10.0.401.
 - Full solution and Release plugin builds succeed without warnings or errors.
-- All **8** core synchronization tests pass.
+- All **13** core synchronization/lifecycle tests and **4** package-consistency
+  tests pass.
 - The reference setup succeeds through anonymous SteamCMD; a repeated setup
   skips installed downloads. Package metadata and the 256 × 256 PNG are valid,
   and the release ZIP contains only the intended package files.
@@ -93,6 +94,19 @@ with this build's assemblies; future 1.x updates need verification.
   counters at zero. The complete compatibility fixture and single-click portal
   checks pass afterward, and Release/native-fixture builds have no warnings or
   errors. Injected exceptions are expected error-log entries in this fixture.
+- Version **1.0.8** separates storage guards, scopes, previews, optional adapters,
+  material planning and material supply. Native checks verify that nested staged
+  inventories restore their enclosing/live inventories after a rule throws, and
+  missing required adapter bindings install no partial hooks. The complete
+  AutoStore/CraftyBoxes compatibility fixture passes, including quality rules,
+  Leave One, destination ordering, transfer effects, slow/stale previews,
+  transaction lifecycle faults, portal counts and single-click continuation.
+  The native transport fixture also passes with both optional QoL mods absent,
+  including unresolved player prefabs and the usual GUI/bulk/drag transfers.
+  Builds derive plugin/assembly versions from the manifest and share game
+  references. Four package tests accept a matching build and reject a changed
+  manifest, replaced plugin/core DLLs, or a missing build receipt before writing
+  an archive. Solution and native-fixture builds have no warnings or errors.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
@@ -157,6 +171,11 @@ earlier Harmony prefixes. It also destroys access points during delayed opens
 and simulates a 30-second opening timeout by advancing the request timestamp.
 Expected injected exceptions must be followed by the transaction application,
 cancellation and scope pass markers, then `NATIVE_SMOKE_COMPAT_PASSED`.
+
+The adapter fixture checks nested staged inventory restoration and required-hook
+validation before the compatibility flows. It emits
+`NATIVE_SMOKE_ADAPTER_BINDINGS_PASSED`. Its deliberate missing-prefix lookup
+produces a Harmony warning; no partial hooks may remain after that rejection.
 
 ## Automated and container checks
 
