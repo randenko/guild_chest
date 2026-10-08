@@ -76,6 +76,10 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
     {
         if (delivering) return true;
         int operation = new ZPackage(package.GetArray()).ReadInt();
+        if (operation == 1) lastCommitReply = package.GetArray();
+        if (operation == 5) lastOpenReply = package.GetArray();
+        if (operation == 1 && dropNextCommitReply) { dropNextCommitReply = false; return false; }
+        if (operation == 5 && dropNextOpenReply) { dropNextOpenReply = false; return false; }
         if (operation == 4 && dropNextPeek) { dropNextPeek = false; return false; }
         float delay = operation == 1 ? 0.5f : operation == 4 ? peekDelay : operation == 5 ? openDelay : 0f;
         if (delay <= 0) return true;
@@ -425,6 +429,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
         }
         catch (Exception exception) { Fail(exception); yield break; }
         yield return RunStorageRegressions(player, chest, ordinary, second);
+        if (!File.Exists(Marker + ".failed")) yield return RunTransactionRegressions(player, chest, ordinary, second);
         if (!File.Exists(Marker + ".failed")) yield return RunPortal(player, chest);
     }
     private IEnumerator RunPortal(Player player, Container chest)
@@ -542,7 +547,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
             Check(Objects.Count(zdo => zdo.GetPrefab() == hash) == before + 1, "Changed aim cancels deferred placement");
             foreach (var requirement in portal.m_resources) Check(player.GetInventory().CountItems(requirement.m_resItem.m_itemData.m_shared.m_name) == requirement.m_amount, "Cancelled placement retains acknowledged materials");
             Check(buildAgainMessages == 0, "Cancelled build does not request a re-click");
-            File.WriteAllText(Marker, "compatibility: ingredient-quality, AutoStore continuation, slow/stale/expired Peek regressions; automatic single-click portal build; materials/stamina/durability charged once; no re-click message; changed-aim cancellation; client preview lifecycle; effects; crafting; rejection/busy checks passed\n");
+            File.WriteAllText(Marker, "compatibility: transaction application/cancellation/scopes; ingredient-quality; AutoStore continuation; slow/stale/expired Peek; automatic single-click portal build; materials/stamina/durability charged once; no re-click message; changed-aim cancellation; client preview lifecycle; effects; crafting; rejection/busy checks passed\n");
             Logger.LogInfo("NATIVE_SMOKE_PORTAL_PASSED"); Logger.LogInfo("NATIVE_SMOKE_COMPAT_PASSED"); Application.Quit();
         }
         catch (Exception exception) { Fail(exception); }

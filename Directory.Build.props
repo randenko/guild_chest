@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <Deterministic>true</Deterministic>
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
     <ValheimManagedDir Condition="'$(ValheimManagedDir)' == ''">$(MSBuildThisFileDirectory).local/valheim-server/valheim_server_Data/Managed</ValheimManagedDir>
     <ModDependenciesDir>$(MSBuildThisFileDirectory).local/dependencies</ModDependenciesDir>
   </PropertyGroup>

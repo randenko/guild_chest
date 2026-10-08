@@ -81,6 +81,18 @@ with this build's assemblies; future 1.x updates need verification.
   single-click portal, cancellation and client lifecycle checks also pass.
   All 8 core tests and the Release/native-fixture builds pass without warnings
   or errors.
+- Version **1.0.7** adds five game-independent lifecycle cases, bringing the
+  normal suite to **13 passing tests**. Native fault injection verifies that a
+  seven-iron withdrawal remains seven after a throwing inventory notification
+  and a duplicate ACK. Throwing no-op/rejection callbacks run once after session
+  cleanup. A preview refresh fault does not reject or replay accepted items.
+  A fault before local application retries locally without a second commit RPC.
+  Destroyed access points, open timeouts and session reset complete cancellation
+  once; late grants are released, and canceled opens resume ordinary AutoStore
+  deposits. Earlier Harmony prefix failures leave UI, preview and consumption
+  counters at zero. The complete compatibility fixture and single-click portal
+  checks pass afterward, and Release/native-fixture builds have no warnings or
+  errors. Injected exceptions are expected error-log entries in this fixture.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
@@ -138,6 +150,13 @@ replies by 0.5 seconds, preview replies by 1.2 seconds, and drop one preview.
 The timeout check advances the stored request timestamp by 11 seconds instead
 of waiting ten seconds. Those DLLs and the fixture remain excluded from the
 release ZIP.
+
+The transaction lifecycle fixture deliberately throws from inventory-change
+notifications, preview refresh, callbacks, local application preparation and
+earlier Harmony prefixes. It also destroys access points during delayed opens
+and simulates a 30-second opening timeout by advancing the request timestamp.
+Expected injected exceptions must be followed by the transaction application,
+cancellation and scope pass markers, then `NATIVE_SMOKE_COMPAT_PASSED`.
 
 ## Automated and container checks
 

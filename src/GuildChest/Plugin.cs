@@ -19,7 +19,7 @@ namespace GuildChest;
 public sealed class Plugin : BaseUnityPlugin
 {
     public const string Id = "com.randenko.guildchest";
-    public const string ModVersion = "1.0.6";
+    public const string ModVersion = "1.0.7";
     public const string ChestName = "GuildChest";
     internal const string StateName = "GuildChestWorldState";
     internal static readonly int ChestHash = ChestName.GetStableHashCode();

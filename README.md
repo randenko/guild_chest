@@ -56,7 +56,7 @@ Linux host. No host .NET SDK or Unity Editor is required.
    bash scripts/dev.sh package
    ```
 
-The release ZIP is written to `artifacts/GuildChest-1.0.6.zip`, visible in the
+The release ZIP is written to `artifacts/GuildChest-1.0.7.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
 and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create restores
 NuGet packages but does not download or update the game automatically.

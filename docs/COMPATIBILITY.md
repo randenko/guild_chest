@@ -28,6 +28,21 @@ remaining destinations after a guild transfer, and accepts preview replies
 that take longer than the polling interval. The shared-store save format and
 single-click building behavior remain compatible with earlier saves.
 
+Version **1.0.7** separates a transfer's acknowledgement, local item application,
+notifications and completion. Accepted items are applied once. An inventory
+notification or preview refresh failure is logged without replaying the item
+mutation. A preparation failure before mutation retries locally using the
+accepted result, rather than submitting the commit again. Completion callbacks
+run once after cleanup, and their exceptions are logged separately.
+
+Opening requests have their own identity and timeout. A destroyed/unloaded chest,
+unavailable player or timeout cancels the request and lets AutoStore continue.
+A late grant for a canceled request is released instead of opening the chest.
+World/session reset completes waiting callbacks with an explanatory reason.
+If a sent transfer loses its acknowledgement during shutdown, that reason
+explicitly says the host may already have accepted it; world and character saves
+still do not form one atomic transaction.
+
 ## AzuAutoStore
 
 The adapter targets **AzuAutoStore 3.1.7**, obtained from its author's Hexium
@@ -142,6 +157,12 @@ between the supplied inventories. Do not keep their references, mutate real
 inventories, create gameplay objects, or consume resources in that action.
 Exceptions discard staged changes. While a transfer awaits acknowledgement,
 native player inventory mutation methods are blocked.
+
+Callback exceptions do not change a confirmed outcome or invoke the callback
+again. A canceled open reports failure without moving items. A session reset
+before an outstanding commit is acknowledged reports an unconfirmed outcome;
+the reason describes that uncertainty. Do not interpret that result as proof
+that the server rolled back the transfer.
 
 The API does not make world/character saves atomic and does not recover earlier
 lost items. See [validation](VALIDATION.md) for tested paths and remaining live

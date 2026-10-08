@@ -37,8 +37,8 @@ internal static class GuildUiInventoryScopePatch
 {
     private static IEnumerable<MethodBase> TargetMethods() => new[] { "Show", "UpdateContainer", "UpdateContainerWeight" }
         .Select(name => AccessTools.Method(typeof(InventoryGui), name));
-    private static void Prefix() => StorageCompatibility.UiDepth++;
-    private static void Finalizer() => StorageCompatibility.UiDepth--;
+    private static void Prefix(ref bool __state) { __state = true; StorageCompatibility.UiDepth++; }
+    private static void Finalizer(bool __state) { if (__state) StorageCompatibility.UiDepth--; }
 }
 
 [HarmonyPatch]
@@ -53,13 +53,14 @@ internal static class CraftyPreviewScopePatch
         yield return AccessTools.Method(typeof(Hud), "SetupPieceInfo");
     }
     [HarmonyPriority(Priority.First)]
-    private static void Prefix()
+    private static void Prefix(ref bool __state)
     {
+        __state = true;
         if (StorageCompatibility.PreviewDepth++ == 0) StorageCompatibility.InvalidateCounts();
     }
-    private static void Finalizer()
+    private static void Finalizer(bool __state)
     {
-        if (--StorageCompatibility.PreviewDepth == 0) StorageCompatibility.InvalidateCounts();
+        if (__state && --StorageCompatibility.PreviewDepth == 0) StorageCompatibility.InvalidateCounts();
     }
 }
 
@@ -113,8 +114,8 @@ internal static class GuildBuildingResumePatch
 [HarmonyPatch(typeof(Player), nameof(Player.ConsumeResources))]
 internal static class GuildConsumptionScopePatch
 {
-    private static void Prefix() { StorageCompatibility.ConsumptionDepth++; StorageCompatibility.InvalidateCounts(); }
-    private static void Finalizer() { StorageCompatibility.ConsumptionDepth--; StorageCompatibility.InvalidateCounts(); }
+    private static void Prefix(ref bool __state) { __state = true; StorageCompatibility.ConsumptionDepth++; StorageCompatibility.InvalidateCounts(); }
+    private static void Finalizer(bool __state) { if (__state) { StorageCompatibility.ConsumptionDepth--; StorageCompatibility.InvalidateCounts(); } }
 }
 
 // Guard native inventory APIs too: third-party writers must use a staged transfer.
