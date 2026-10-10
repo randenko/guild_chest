@@ -1,5 +1,10 @@
 # Guild Chest
 
+[![CI](https://github.com/randenko/guild_chest/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/randenko/guild_chest/actions/workflows/ci.yml?query=branch%3Amain)
+[![Tests](https://img.shields.io/github/check-runs/randenko/guild_chest/main?nameFilter=tests&label=tests)](https://github.com/randenko/guild_chest/actions/workflows/ci.yml?query=branch%3Amain)
+[![Latest release](https://img.shields.io/github/v/release/randenko/guild_chest)](https://github.com/randenko/guild_chest/releases/latest)
+[![License](https://img.shields.io/github/license/randenko/guild_chest)](LICENSE)
+
 A Valheim 1.x mod that makes every guild chest in a world an access point to
 one shared inventory. Supports single-player, player-hosted multiplayer, and
 dedicated servers. The mod and its dependencies must be installed on every
