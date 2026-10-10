@@ -83,6 +83,19 @@ VS Code also forwards a running host SSH agent automatically. Because the mount
 is read-only, add any missing GitHub host-key entry to `~/.ssh/known_hosts` on
 the host by running `ssh -T git@github.com` there first.
 
+The dev container also includes GitHub CLI (`gh`) from
+[GitHub's official apt repository](https://github.com/cli/cli/blob/trunk/docs/install_linux.md#debian).
+Run **Dev Containers: Rebuild Container** to add it to an existing container.
+Authenticate once inside the rebuilt container with `gh auth login` and verify
+with `gh auth status` before using commands such as `gh pr list` or `gh pr checks`.
+The `guild-chest-gh` Docker volume persists `/home/vscode/.config/gh` across
+container rebuilds, so subsequent rebuilds retain your login. The post-create
+command restores ownership for the container user if its UID changes. Deleting
+this volume removes the saved login. In this container, GitHub CLI falls back to
+[storing its token in a plain-text configuration file](https://cli.github.com/manual/gh_auth_login)
+when no system credential store is available; the directory is restricted to the
+container user and stays outside the repository.
+
 The C# extension is configured to handle the SDK-style `net48` plugin. If
 VS Code opens before automatic setup finishes, wait for it to complete and then
 run **Developer: Reload Window** to refresh unresolved game symbols. If reference
