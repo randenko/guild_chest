@@ -60,6 +60,16 @@ and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create downloa
 missing references and restores NuGet packages; updating existing game references
 still requires the explicit `setup --update` command below.
 
+The dev container mounts the Linux host's `~/.ssh` directory read-only at
+`/home/vscode/.ssh`, so Git can use your existing GitHub SSH key. After changing
+the container configuration, run **Dev Containers: Rebuild Container** to apply
+the mount. Verify authentication inside the container with `ssh -T git@github.com`
+before pushing. GitHub's successful authentication greeting exits with status 1.
+If your key has a passphrase, SSH prompts for it unless an agent has it loaded;
+VS Code also forwards a running host SSH agent automatically. Because the mount
+is read-only, add any missing GitHub host-key entry to `~/.ssh/known_hosts` on
+the host by running `ssh -T git@github.com` there first.
+
 The C# extension is configured to handle the SDK-style `net48` plugin. If
 VS Code opens before automatic setup finishes, wait for it to complete and then
 run **Developer: Reload Window** to refresh unresolved game symbols. If reference

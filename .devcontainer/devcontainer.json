@@ -4,7 +4,8 @@
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
   "mounts": [
-    "source=guild-chest-nuget,target=/home/vscode/.nuget/packages,type=volume"
+    "source=guild-chest-nuget,target=/home/vscode/.nuget/packages,type=volume",
+    "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
   ],
   "customizations": {
     "vscode": {
