@@ -5,6 +5,10 @@
   "updateRemoteUserUID": true,
   "mounts": [
     "source=guild-chest-nuget,target=/home/vscode/.nuget/packages,type=volume",
+    "source=${localEnv:HOME}/.codex,target=/home/vscode/.codex,type=bind",
+    "source=guild-chest-codex-packages,target=/home/vscode/.codex/packages,type=volume",
+    "source=guild-chest-codex-daemon,target=/home/vscode/.codex/app-server-daemon,type=volume",
+    "source=guild-chest-codex-control,target=/home/vscode/.codex/app-server-control,type=volume",
     "source=${localEnv:HOME}/.ssh,target=/home/vscode/.ssh,type=bind,readonly"
   ],
   "customizations": {

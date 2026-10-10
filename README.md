@@ -60,6 +60,19 @@ and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create downloa
 missing references and restores NuGet packages; updating existing game references
 still requires the explicit `setup --update` command below.
 
+The dev container includes Codex CLI, installed as `vscode` using
+[OpenAI's official shell installer](https://learn.chatgpt.com/docs/codex/cli).
+Run **Dev Containers: Rebuild Container** to add it to an existing container,
+then run `codex` in the container terminal. Your host `~/.codex` directory is
+mounted read-write at `/home/vscode/.codex`, sharing authentication, configuration,
+and session history. Sign in when prompted if you have not already done so.
+The CLI and daemon packages are installed with the official installer and kept
+in the `guild-chest-codex-packages` Docker volume. Daemon runtime files use the
+`guild-chest-codex-daemon` and `guild-chest-codex-control` volumes. These mount over
+the corresponding directories inside `.codex`, keeping executable symlinks,
+process IDs, and sockets local to
+the container while sharing the rest of your Codex state with the host.
+
 The dev container mounts the Linux host's `~/.ssh` directory read-only at
 `/home/vscode/.ssh`, so Git can use your existing GitHub SSH key. After changing
 the container configuration, run **Dev Containers: Rebuild Container** to apply

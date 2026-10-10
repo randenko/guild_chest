@@ -7,3 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN mkdir -p /home/vscode/.nuget/packages /home/vscode/.nuget/NuGet \
     && chown -R vscode:vscode /home/vscode/.nuget
 USER vscode
+ENV PATH="/home/vscode/.local/bin:${PATH}"
+RUN curl -fsSL https://chatgpt.com/codex/install.sh -o /tmp/codex-install.sh \
+    && CODEX_NON_INTERACTIVE=1 sh /tmp/codex-install.sh \
+    && CODEX_INSTALL_DAEMON_ONLY=1 CODEX_NON_INTERACTIVE=1 sh /tmp/codex-install.sh \
+    && mkdir -p /home/vscode/.codex/app-server-daemon \
+    && rm /tmp/codex-install.sh \
+    && codex --version
+RUN mkdir -p /home/vscode/.codex/app-server-control
