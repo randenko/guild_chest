@@ -35,14 +35,11 @@ Linux host. No host .NET SDK or Unity Editor is required.
 
 1. Open this repository in VS Code.
 2. Run **Dev Containers: Reopen in Container** from the Command Palette.
-3. Run **Tasks: Run Task → Setup References**, or the command below. The first
-   run downloads roughly 2.2 GB of Valheim Dedicated Server files using anonymous
-   SteamCMD login, plus pinned BepInEx and Jötunn dependencies. No Steam account
-   credentials are needed.
-
-   ```bash
-   bash scripts/dev.sh setup
-   ```
+3. Wait for the container's automatic setup to finish. It downloads roughly
+   2.2 GB of Valheim Dedicated Server files using anonymous SteamCMD login,
+   fetches pinned BepInEx and Jötunn dependencies, and then restores NuGet
+   packages. No Steam account credentials are needed. Existing references are
+   reused when rebuilding the container.
 
 4. Run **Build Debug** (`Ctrl+Shift+B`) and **Run Tests**, or:
 
@@ -59,12 +56,15 @@ Linux host. No host .NET SDK or Unity Editor is required.
 
 The release ZIP is written to `artifacts/GuildChest-1.0.9.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
-and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create restores
-NuGet packages but does not download or update the game automatically.
+and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create downloads
+missing references and restores NuGet packages; updating existing game references
+still requires the explicit `setup --update` command below.
 
 The C# extension is configured to handle the SDK-style `net48` plugin. If
-VS Code opens before references are downloaded, run Setup References and then
-**Developer: Reload Window** to refresh unresolved game symbols.
+VS Code opens before automatic setup finishes, wait for it to complete and then
+run **Developer: Reload Window** to refresh unresolved game symbols. If reference
+setup fails, retry with **Tasks: Run Task → Setup References** or
+`bash scripts/dev.sh setup`.
 
 To debug automated tests, start **Debug Test Host**, wait for its process ID,
 then select **Attach to .NET test host** in the Run and Debug panel and pick that

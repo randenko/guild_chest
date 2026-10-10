@@ -15,6 +15,6 @@
       }
     }
   },
-  "postCreateCommand": "dotnet restore GuildChest.sln",
+  "postCreateCommand": "bash scripts/dev.sh setup && dotnet restore GuildChest.sln",
   "shutdownAction": "stopContainer"
 }
