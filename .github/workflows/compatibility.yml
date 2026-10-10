@@ -1,0 +1,62 @@
+name: Valheim compatibility
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: valheim-compatibility
+  cancel-in-progress: false
+
+env:
+  NUGET_PACKAGES: ${{ github.workspace }}/.local/nuget
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  compatibility:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: mcr.microsoft.com/devcontainers/dotnet:2-10.0-noble@sha256:9eb314432a5fa67773a53ab754cdc381cae614906162f9fc44cdb7f7837b91c7
+      options: --user 0
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: ./.github/actions/setup-build
+        with:
+          references: fresh
+      - name: Restore solution and native fixture
+        run: |
+          dotnet restore GuildChest.sln --locked-mode
+          dotnet restore tests/GuildChest.NativeSmoke/GuildChest.NativeSmoke.csproj --locked-mode
+      - name: Run tests
+        run: bash scripts/dev.sh test --no-restore --logger 'trx;LogFileName=tests.trx' --results-directory "$GITHUB_WORKSPACE/TestResults" 2>&1 | tee artifacts/tests.log
+      - name: Build Debug
+        run: bash scripts/dev.sh build --no-restore 2>&1 | tee artifacts/debug-build.log
+      - name: Package Release
+        run: bash scripts/dev.sh package --no-restore 2>&1 | tee artifacts/package.log
+      - name: Compile native fixture
+        run: dotnet build tests/GuildChest.NativeSmoke/GuildChest.NativeSmoke.csproj --configuration Release --no-restore 2>&1 | tee artifacts/native-build.log
+      - name: Upload compatibility diagnostics
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: compatibility-diagnostics
+          overwrite: true
+          path: |
+            TestResults/
+            artifacts/*.log
+            .local/references.json
+          include-hidden-files: true
+          retention-days: 14

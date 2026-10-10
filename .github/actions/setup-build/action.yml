@@ -1,0 +1,55 @@
+name: Set up Guild Chest builds
+description: Install build tools and restore optional NuGet and game-reference caches.
+inputs:
+  references:
+    description: Reference setup mode (none, cached, or fresh).
+    default: none
+  cache-nuget:
+    description: Whether to restore and save the NuGet cache.
+    default: 'true'
+runs:
+  using: composite
+  steps:
+    - name: Install prerequisites
+      shell: bash
+      run: |
+        apt-get update
+        apt-get install -y --no-install-recommends lib32gcc-s1 lib32stdc++6 python3 unzip curl ca-certificates zstd
+        mkdir -p artifacts
+        dotnet --version
+        python3 --version
+
+    - name: Cache NuGet packages
+      if: inputs.cache-nuget == 'true'
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+      with:
+        path: ${{ env.NUGET_PACKAGES }}
+        key: nuget-v1-${{ runner.os }}-${{ runner.arch }}-9eb314432a5f-${{ hashFiles('global.json', '**/packages.lock.json') }}
+
+    - name: Identify reference cache
+      if: inputs.references == 'cached'
+      id: reference-cache
+      shell: bash
+      run: echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+
+    - name: Cache game references
+      if: inputs.references == 'cached'
+      uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+      with:
+        path: |
+          .local/valheim-server/valheim_server_Data/Managed
+          .local/valheim-server/steamapps/appmanifest_896660.acf
+          .local/dependencies
+        key: references-v1-${{ runner.os }}-${{ runner.arch }}-9eb314432a5f-${{ hashFiles('scripts/setup.py', 'manifest.json') }}-${{ steps.reference-cache.outputs.week }}
+
+    - name: Set up game references
+      if: inputs.references != 'none'
+      shell: bash
+      env:
+        REFERENCE_MODE: ${{ inputs.references }}
+      run: |
+        case "$REFERENCE_MODE" in
+          cached) bash scripts/dev.sh setup 2>&1 | tee artifacts/setup.log ;;
+          fresh) bash scripts/dev.sh setup --update 2>&1 | tee artifacts/setup.log ;;
+          *) echo "Unknown reference mode: $REFERENCE_MODE" >&2; exit 1 ;;
+        esac

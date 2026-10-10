@@ -153,6 +153,65 @@ characters and malicious clients.
 See [the gameplay verification checklist](docs/VALIDATION.md) for the exact
 build tested and the scenarios that require running Valheim.
 
+## GitHub automation and releases
+
+Pull requests and pushes to `main` run two independent CI checks:
+
+- **tests** restores the core test project in locked mode and runs the C# and
+  Python suites without downloading Valheim.
+- **build-package** sets up game references, restores the solution in locked
+  mode, builds Debug, and produces the installable Release ZIP.
+
+Open a run under **Actions → CI** to download `guild-chest-package`, test
+results, and build diagnostics. Artifacts are retained for 14 days. The package
+artifact wraps the installable `GuildChest-<version>.zip`; extract that outer
+artifact before installing. These CI packages are development builds, not
+published releases. Require the `tests` and `build-package` checks in the `main`
+branch ruleset to block merging failing changes.
+
+CI caches NuGet packages by lock-file hashes and game references by setup
+script, manifest, and UTC week. A cache miss downloads roughly 2.2 GB; later
+runs reuse the reference assemblies. Builds run in the same pinned .NET base
+image as the dev container, with build prerequisites but without its Codex
+installation or host credential mounts.
+
+**Valheim compatibility** runs every Monday at 06:17 UTC and can be started
+manually from Actions. It always checks `main` against fresh game references,
+runs the automated suites, builds/packages the plugin, and compiles the optional
+native fixture. Its diagnostics include setup/build logs, test results, and
+`references.json` with the Steam build and assembly hashes. Compilation does
+not establish native runtime or gameplay compatibility; use the validation
+checklist for those checks. Configure GitHub Actions notifications to receive
+failure notifications. Dependabot also opens weekly grouped update PRs for
+NuGet packages and pinned GitHub Actions; updates require review and passing CI.
+
+To release a new version:
+
+1. Update `version_number` in `manifest.json`, update the relevant documentation,
+   and merge the change into `main` after CI and relevant gameplay checks pass.
+2. Tag the merged commit with the exact manifest version and push that tag:
+
+   ```bash
+   git tag -a vX.Y.Z -m "Guild Chest X.Y.Z"
+   git push origin vX.Y.Z
+   ```
+
+3. The **Release** workflow verifies that the tag is exactly `v<manifest version>`
+   and its commit belongs to `main`. It reruns tests, downloads fresh references
+   without using reference or NuGet caches, builds Debug, and packages Release.
+4. After validation succeeds, it creates a **draft GitHub release** containing
+   generated release notes, the installable ZIP, and a `.zip.sha256` checksum.
+   Review the notes, package, reference build, and relevant gameplay results,
+   then publish the draft from GitHub's Releases page.
+
+Stable `vX.Y.Z` tags are supported; prerelease tags are rejected. Validation
+failures create no release. Rerunning a successful workflow can replace assets on
+an existing draft, but refuses to modify a published release. No external
+publishing token is needed: only the final draft job receives `contents: write`
+through GitHub's built-in token. Publishing to Thunderstore remains a manual
+step. GitHub workflows do not bump versions, create tags, or publish drafts
+automatically.
+
 ### Transfer rejection troubleshooting
 
 Version 1.0.1 fixes transfers being blocked by an unrelated item in the player's
