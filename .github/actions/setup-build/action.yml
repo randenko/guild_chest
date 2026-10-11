@@ -1,8 +1,8 @@
 name: Set up Guild Chest builds
-description: Install build tools and restore optional NuGet and game-reference caches.
+description: Install build tools, restore optional caches, and compile the NUKE runner.
 inputs:
   references:
-    description: Reference setup mode (none, cached, or fresh).
+    description: Reference cache mode (none or cached); NUKE targets perform reference setup.
     default: none
   cache-nuget:
     description: Whether to restore and save the NuGet cache.
@@ -44,14 +44,8 @@ runs:
           .local/dependencies
         key: references-v1-${{ runner.os }}-${{ runner.arch }}-9eb314432a5f-${{ hashFiles('scripts/setup.py', 'manifest.json') }}-${{ steps.reference-cache.outputs.week }}
 
-    - name: Set up game references
-      if: inputs.references != 'none'
+    - name: Build NUKE runner
       shell: bash
-      env:
-        REFERENCE_MODE: ${{ inputs.references }}
       run: |
-        case "$REFERENCE_MODE" in
-          cached) bash scripts/dev.sh setup 2>&1 | tee artifacts/setup.log ;;
-          fresh) bash scripts/dev.sh setup --update 2>&1 | tee artifacts/setup.log ;;
-          *) echo "Unknown reference mode: $REFERENCE_MODE" >&2; exit 1 ;;
-        esac
+        dotnet restore build/_build.csproj --locked-mode
+        dotnet build build/_build.csproj --configuration Release --no-restore

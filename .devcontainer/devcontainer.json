@@ -21,6 +21,6 @@
       }
     }
   },
-  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.config/gh && chmod 700 /home/vscode/.config/gh && bash scripts/dev.sh setup && dotnet restore GuildChest.sln",
+  "postCreateCommand": "sudo chown -R vscode:vscode /home/vscode/.config/gh && chmod 700 /home/vscode/.config/gh && dotnet run --project build -- --target Restore",
   "shutdownAction": "stopContainer"
 }

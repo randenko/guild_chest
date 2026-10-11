@@ -43,7 +43,10 @@ is a consistency check and is excluded from releases.
 Framework reference-assembly package for the plugin and native fixture.
 Game-independent projects do not import it.
 
-Run `bash scripts/dev.sh test` for core lifecycle and package-consistency tests.
+Run `dotnet run --project build -- --target Test` for core lifecycle,
+package-consistency, and build orchestration tests. The standalone NUKE project
+in `build/` coordinates the existing Python helpers and MSBuild targets; it is
+excluded from the product solution and release ZIP.
 The optional native fixture exercises real game and QoL assemblies, including
 scope restoration, adapter installation, deposits, resource previews and portal
 placement. See [validation](VALIDATION.md) for how to run it and its limits.

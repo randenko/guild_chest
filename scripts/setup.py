@@ -21,15 +21,29 @@ def download(url, destination):
     subprocess.run(['curl', '--fail', '--location', '--retry', '3', '--output', str(destination), url], check=True)
 
 
+def reference_key(path):
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--update', action='store_true', help='Explicitly update the game and refetch pinned mod dependencies.')
+    parser.add_argument('--update', action='store_true',
+                        help='Refresh downloaded game references and pinned mod dependencies; supplied game references stay unchanged.')
+    parser.add_argument('--valheim-managed-dir', type=Path,
+                        help='Use existing game references without downloading or updating Valheim.')
     args = parser.parse_args()
     LOCAL.mkdir(exist_ok=True)
     DEPENDENCIES.mkdir(exist_ok=True)
     server = LOCAL / 'valheim-server'
-    managed = server / 'valheim_server_Data' / 'Managed'
-    if args.update or not (managed / 'assembly_valheim.dll').is_file():
+    managed = (args.valheim_managed_dir.resolve() if args.valheim_managed_dir is not None
+               else server / 'valheim_server_Data' / 'Managed')
+    if args.valheim_managed_dir is not None:
+        if not (managed / 'assembly_valheim.dll').is_file():
+            raise SystemExit(f'Valheim Managed directory is missing assembly_valheim.dll: {managed}')
+    elif args.update or not (managed / 'assembly_valheim.dll').is_file():
         steam = LOCAL / 'steamcmd'
         steam.mkdir(exist_ok=True)
         if not (steam / 'steamcmd.sh').is_file():
@@ -55,13 +69,15 @@ def main():
     manifest = server / 'steamapps' / 'appmanifest_896660.acf'
     refs = [managed / 'assembly_valheim.dll', managed / 'assembly_utils.dll', *DEPENDENCIES.glob('*.dll')]
     metadata = {
-        'steam_app_id': 896660,
-        'steam_manifest': manifest.read_text() if manifest.exists() else None,
+        'managed_dir': str(managed),
+        'steam_app_id': 896660 if args.valheim_managed_dir is None else None,
+        'steam_manifest': (manifest.read_text()
+                           if args.valheim_managed_dir is None and manifest.exists() else None),
         'dependencies': {name: data[2] for name, data in PACKAGES.items()},
-        'sha256': {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in refs if path.exists()},
+        'sha256': {reference_key(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in refs if path.exists()},
     }
     (LOCAL / 'references.json').write_text(json.dumps(metadata, indent=2) + '\n')
-    print('References ready. Run bash scripts/dev.sh build.')
+    print('References ready. Run dotnet run --project build -- --target Compile.')
 
 
 if __name__ == '__main__':

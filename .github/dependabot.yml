@@ -11,6 +11,7 @@ updates:
     open-pull-requests-limit: 5
   - package-ecosystem: nuget
     directories:
+      - /build
       - /src/GuildChest
       - /src/GuildChest.Core
       - /tests/GuildChest.Tests

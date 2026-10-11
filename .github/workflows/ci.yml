@@ -35,10 +35,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/setup-build
-      - name: Restore tests
-        run: dotnet restore tests/GuildChest.Tests/GuildChest.Tests.csproj --locked-mode
       - name: Run tests
-        run: bash scripts/dev.sh test --no-restore --logger 'trx;LogFileName=tests.trx' --results-directory "$GITHUB_WORKSPACE/TestResults" 2>&1 | tee artifacts/tests.log
+        run: dotnet run --project build --configuration Release --no-build --no-restore -- --target Test --test-logger 'trx;LogFileName=tests.trx' --test-results-directory "$GITHUB_WORKSPACE/TestResults" 2>&1 | tee artifacts/tests.log
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -64,12 +62,8 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           references: cached
-      - name: Restore solution
-        run: dotnet restore GuildChest.sln --locked-mode
-      - name: Build Debug
-        run: bash scripts/dev.sh build --no-restore 2>&1 | tee artifacts/debug-build.log
-      - name: Package Release
-        run: bash scripts/dev.sh package --no-restore 2>&1 | tee artifacts/package.log
+      - name: Build Debug and package Release
+        run: dotnet run --project build --configuration Release --no-build --no-restore -- --target Compile Package 2>&1 | tee artifacts/build-package.log
       - name: Upload installable package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:

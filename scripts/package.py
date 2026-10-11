@@ -25,10 +25,10 @@ for path in files.values():
         raise SystemExit(f'Missing package input: {path}')
 receipt_path = binary_dir / 'GuildChest.build.xml'
 if not receipt_path.is_file():
-    raise SystemExit('Missing build receipt. Run bash scripts/dev.sh package to rebuild.')
+    raise SystemExit('Missing build receipt. Run dotnet run --project build -- --target Package to rebuild.')
 receipt = ET.parse(receipt_path).getroot()
 if receipt.get('version') != manifest['version_number']:
-    raise SystemExit('Release binaries have a different version. Run bash scripts/dev.sh package to rebuild.')
+    raise SystemExit('Release binaries have a different version. Run dotnet run --project build -- --target Package to rebuild.')
 hashes = {entry.get('name'): entry.get('hash') for entry in receipt.findall('file')}
 for name in ('GuildChest.dll', 'GuildChest.Core.dll'):
     actual = hashlib.sha256((binary_dir / name).read_bytes()).hexdigest()
