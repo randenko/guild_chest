@@ -61,7 +61,7 @@ Linux host. No host .NET SDK or Unity Editor is required.
    dotnet run --project build -- --target Package
    ```
 
-The release ZIP is written to `artifacts/GuildChest-1.0.9.zip`, visible in the
+The release ZIP is written to `artifacts/GuildChest-1.0.10.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
 and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create downloads
 missing references and restores NuGet packages; updating existing game references
@@ -139,7 +139,7 @@ dotnet run --project build -- --help
 | `Package` | Build Release and create the ZIP after validating the build receipt. |
 | `NativeSmoke` | Restore and compile the optional native fixture in Release. |
 | `Compatibility` | Run tests, fetch fresh references, build Debug, package Release, and compile the native fixture. |
-| `ValidateRelease` | Check `--release-tag` against the manifest and verify main-branch ancestry. |
+| `ValidateRelease` | Check `--release-tag` against the manifest, verify main-branch ancestry, and validate categorized release notes. |
 | `Checksum` | Build the package and write its `.zip.sha256` file. |
 | `Release` | Validate the tag, test, fetch fresh references, build Debug, package Release, and write the checksum. |
 
@@ -253,6 +253,12 @@ NuGet packages and pinned GitHub Actions; updates require review and passing CI.
 To release a new version:
 
 1. Update `version_number` in `manifest.json`, update the relevant documentation,
+   and write `docs/releases/vX.Y.Z.md` with `## Mod changes` first and
+   `## Other changes` second. Put player-facing behavior, visuals, fixes, and
+   compatibility in Mod changes; put tooling, CI, documentation, and development
+   environment changes in Other changes. Include at least one bullet per section,
+   using `- None.` when a category has no changes. Review changes since the previous
+   release and include a comparison link after the sections. Commit the notes
    and merge the change into `main` after CI and relevant gameplay checks pass.
 2. Tag the merged commit with the exact manifest version and push that tag:
 
@@ -263,10 +269,11 @@ To release a new version:
 
 3. The **Release** workflow invokes the NUKE `Release` target, which verifies
    that the tag is exactly `v<manifest version>` and its commit belongs to
-   `main`. It reruns tests, downloads fresh references
+   `main`, and checks that the release notes have both sections in order with
+   a bullet in each. It reruns tests, downloads fresh references
    without using reference or NuGet caches, builds Debug, and packages Release.
 4. After validation succeeds, it creates a **draft GitHub release** containing
-   generated release notes, the installable ZIP, and a `.zip.sha256` checksum.
+   the checked-in release notes, the installable ZIP, and a `.zip.sha256` checksum.
    Review the notes, package, reference build, and relevant gameplay results,
    then publish the draft from GitHub's Releases page.
 
@@ -282,7 +289,7 @@ To exercise release validation and packaging locally without creating or
 publishing a GitHub release:
 
 ```bash
-dotnet run --project build -- --target Release --release-tag v1.0.9
+dotnet run --project build -- --target Release --release-tag v1.0.10
 ```
 
 ### Transfer rejection troubleshooting

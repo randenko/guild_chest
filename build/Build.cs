@@ -148,7 +148,7 @@ internal sealed class Build : NukeBuild
         .Executes(() => DotNetBuild(BuildSettings(NativeProject, BuildConfiguration.Release)));
 
     private Target ValidateRelease => target => target
-        .Description("Verify that --release-tag matches the manifest and the commit belongs to origin/main.")
+        .Description("Verify the manifest version, main-branch ancestry, and categorized release notes.")
         .Requires(() => !string.IsNullOrWhiteSpace(releaseTag))
         .Before(RestoreTests, Setup)
         .Executes(() =>

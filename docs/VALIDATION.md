@@ -121,6 +121,13 @@ with this build's assemblies; future 1.x updates need verification.
   13 C# and 30 Python tests pass, and Release/native-fixture builds have no
   warnings or errors. Lighting and visible surface placement require the client
   checks below.
+- Version **1.0.10** passes all 13 C# and 35 Python tests, including categorized
+  release-note validation before downloads. Debug, Release/package, and
+  native-fixture builds have no warnings or errors. The headless fixture loads
+  Guild Chest 1.0.10 and passes decoration registration, lid switching, recipe
+  costs, serialization, world save/reload, unloaded chest retention, and final
+  spilling with exactly two item stacks and preserved metadata. Client-rendered
+  color, lighting, clipping, and placement previews remain manual checks below.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's

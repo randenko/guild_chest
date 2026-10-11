@@ -72,6 +72,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Download validated release assets
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
@@ -97,9 +100,10 @@ jobs:
               ;;
             true)
               gh release upload "$RELEASE_TAG" "artifacts/GuildChest-$VERSION.zip" "artifacts/GuildChest-$VERSION.zip.sha256" --clobber
+              gh release edit "$RELEASE_TAG" --notes-file "docs/releases/$RELEASE_TAG.md"
               ;;
             '')
-              gh release create "$RELEASE_TAG" "artifacts/GuildChest-$VERSION.zip" "artifacts/GuildChest-$VERSION.zip.sha256" --draft --verify-tag --generate-notes --title "Guild Chest $VERSION"
+              gh release create "$RELEASE_TAG" "artifacts/GuildChest-$VERSION.zip" "artifacts/GuildChest-$VERSION.zip.sha256" --draft --verify-tag --notes-file "docs/releases/$RELEASE_TAG.md" --title "Guild Chest $VERSION"
               ;;
             *)
               echo "Unexpected release lookup result: $draft" >&2
