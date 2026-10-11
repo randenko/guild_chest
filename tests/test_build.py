@@ -57,6 +57,9 @@ class BuildTests(unittest.TestCase):
         (self.root / '.nuke').mkdir()
         (self.root / '.nuke/parameters.json').write_text('{}\n')
         (self.root / 'manifest.json').write_text('{"version_number":"1.2.3"}\n')
+        notes = self.root / 'docs/releases/v1.2.3.md'
+        notes.parent.mkdir(parents=True)
+        notes.write_text('## Mod changes\n\n- None.\n\n## Other changes\n\n- A build fix.\n')
         (self.root / 'scripts').mkdir()
         shutil.copyfile(PROJECT / 'scripts/check_release.py', self.root / 'scripts/check_release.py')
         self.git('init', '--initial-branch=main')
@@ -170,6 +173,14 @@ class BuildTests(unittest.TestCase):
         calls, result = self.run_build('--target', 'Release', '--release-tag', 'v1.2.3', success=False)
         self.assertIn('must belong to origin/main', result.stdout + result.stderr)
         self.assertEqual(len(calls), 1)
+
+    def test_missing_release_notes_stop_before_tests_downloads_and_packaging(self):
+        (self.root / 'docs/releases/v1.2.3.md').unlink()
+        calls, result = self.run_build('--target', 'Release', '--release-tag', 'v1.2.3', success=False)
+        self.assertIn('Missing release notes', result.stdout + result.stderr)
+        self.assertEqual(len(calls), 1)
+        self.assertFalse((self.root / 'artifacts').exists())
+        self.assertFalse((self.root / 'github-output').exists())
 
     def test_failed_csharp_tests_stop_before_python_tests(self):
         self.env['FAKE_FAIL_TEST'] = '1'

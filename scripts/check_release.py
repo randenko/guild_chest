@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject release tags that differ from the manifest or point outside main."""
+"""Validate the release version, main ancestry, and categorized release notes."""
 import argparse
 import json
 from pathlib import Path
@@ -8,6 +8,21 @@ import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 RELEASE_TAG = re.compile(r'v(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)')
+
+
+def check_release_notes(tag, repository=ROOT):
+    path = Path(repository) / 'docs' / 'releases' / f'{tag}.md'
+    if not path.is_file():
+        raise ValueError(f'Missing release notes: docs/releases/{tag}.md.')
+    notes = path.read_text(encoding='utf-8')
+    headings = list(re.finditer(r'^## (.+)$', notes, re.MULTILINE))
+    if [heading.group(1) for heading in headings] != ['Mod changes', 'Other changes']:
+        raise ValueError('Release notes must have ## Mod changes followed by ## Other changes.')
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(notes)
+        section = notes[heading.end():end]
+        if not re.search(r'^- \S', section, re.MULTILINE):
+            raise ValueError(f'Release notes section {heading.group(1)} needs at least one bullet (use - None. if empty).')
 
 
 def check_release(tag, version, repository=ROOT):
@@ -21,6 +36,7 @@ def check_release(tag, version, repository=ROOT):
         raise ValueError('Release commit must belong to origin/main. Merge it before tagging.')
     if result.returncode != 0:
         raise ValueError(f'Cannot verify origin/main: {result.stderr.strip()}')
+    check_release_notes(tag, repository)
     return version
 
 

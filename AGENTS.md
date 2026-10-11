@@ -34,6 +34,8 @@ Name C# files `*Tests.cs` and use descriptive behavior names with `[Fact]` or `[
 
 History uses imperative, descriptive subjects such as “Refactor storage compatibility and release packaging,” without a fixed prefix scheme. Keep commits focused. PRs should explain behavior changes, link applicable issues, report automated and gameplay validation, and include screenshots for visible changes.
 
+Write release notes in `docs/releases/vX.Y.Z.md` before tagging. Always use `## Mod changes` first for player-facing mod behavior, visuals, fixes, and compatibility, followed by `## Other changes` for build tooling, CI, documentation, and development environment changes. Give each section at least one bullet; use “None.” when there are no changes in that category. The release workflow validates this format and uses the checked-in file as the GitHub release body.
+
 ## Architecture & Configuration
 
 Keep inventory authority on the host; apply client transfers and effects after acknowledgement. Preserve staged-inventory scope restoration. Set release versions in `manifest.json`. Keep downloaded DLLs, `.local/`, generated binaries, and credentials out of Git; retain NuGet lock files.
