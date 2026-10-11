@@ -39,6 +39,13 @@ attribute. A build receipt records the version and both DLL hashes. Packaging
 rejects a stale version or a replaced DLL before creating the archive; the receipt
 is a consistency check and is excluded from releases.
 
+ZIP entry timestamps are derived from each file's SHA-256 within the ZIP date
+range and its two-second precision. Identical inputs produce identical archives
+regardless of filesystem modification times or the packaging machine's timezone.
+Changed DLLs receive different timestamps even when their sizes match. This lets
+Docker's rsync copy updated binaries and makes BepInEx refresh cached plugin
+versions. These dates identify file contents; they do not record build times.
+
 `build/ValheimReferences.props` holds the shared game/loader references and
 Framework reference-assembly package for the plugin and native fixture.
 Game-independent projects do not import it.
