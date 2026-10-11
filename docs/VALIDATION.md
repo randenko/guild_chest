@@ -128,6 +128,11 @@ with this build's assemblies; future 1.x updates need verification.
   costs, serialization, world save/reload, unloaded chest retention, and final
   spilling with exactly two item stacks and preserved metadata. Client-rendered
   color, lighting, clipping, and placement previews remain manual checks below.
+- Version **1.0.11** passes all 13 C# and 38 Python tests, plus manifest and
+  release note validation. Packaging regressions verify different ZIP timestamps
+  for changed DLLs of the same size across releases and rebuilds, upgrades from
+  the legacy fixed timestamp, and identical archives despite differing file
+  modification times and packaging timezones.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
