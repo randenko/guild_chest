@@ -143,7 +143,7 @@ The optional `tests/GuildChest.NativeSmoke` project is a BepInEx test plugin,
 excluded from the release package and normal test command. Build it explicitly:
 
 ```bash
-dotnet build tests/GuildChest.NativeSmoke/GuildChest.NativeSmoke.csproj -c Release
+dotnet run --project build -- --target NativeSmoke
 ```
 
 Install its DLL alongside Guild Chest in an isolated Valheim 1.x dedicated-server

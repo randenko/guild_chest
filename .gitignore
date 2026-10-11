@@ -8,3 +8,5 @@ TestResults/
 __pycache__/
 *.pyc
 Environment.props
+.nuke/temp/
+.nuke/build.schema.json

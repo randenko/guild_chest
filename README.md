@@ -49,14 +49,14 @@ Linux host. No host .NET SDK or Unity Editor is required.
 4. Run **Build Debug** (`Ctrl+Shift+B`) and **Run Tests**, or:
 
    ```bash
-   bash scripts/dev.sh build
-   bash scripts/dev.sh test
+   dotnet run --project build -- --target Compile
+   dotnet run --project build -- --target Test
    ```
 
 5. Run **Package Release**, or:
 
    ```bash
-   bash scripts/dev.sh package
+   dotnet run --project build -- --target Package
    ```
 
 The release ZIP is written to `artifacts/GuildChest-1.0.9.zip`, visible in the
@@ -105,7 +105,7 @@ The C# extension is configured to handle the SDK-style `net48` plugin. If
 VS Code opens before automatic setup finishes, wait for it to complete and then
 run **Developer: Reload Window** to refresh unresolved game symbols. If reference
 setup fails, retry with **Tasks: Run Task → Setup References** or
-`bash scripts/dev.sh setup`.
+`dotnet run --project build -- --target Setup`.
 
 To debug automated tests, start **Debug Test Host**, wait for its process ID,
 then select **Attach to .NET test host** in the Run and Debug panel and pick that
@@ -119,25 +119,65 @@ The plugin targets **.NET Framework 4.8**, its game-independent core targets
 Framework reference assemblies from NuGet. The dev container image is pinned
 by digest, and NuGet lock files are checked in.
 
+Build orchestration uses [NUKE](https://nuke.build/) in the standalone
+`build/_build.csproj` project. The SDK restores the pinned runner dependencies
+in locked mode; no global NUKE tool or shell wrapper is required. List targets
+and parameters with:
+
+```bash
+dotnet run --project build -- --help
+```
+
+| Target | Behavior |
+| --- | --- |
+| `Setup` | Fetch missing references and pinned mod dependencies; add `--update-references` to refresh. |
+| `Restore` | Set up references and restore the product solution in locked mode. |
+| `Compile` | Set up, restore, and build Debug; use `--configuration Release` for Release. |
+| `Test` | Restore the test project and run C# and Python tests without game downloads. |
+| `Package` | Build Release and create the ZIP after validating the build receipt. |
+| `NativeSmoke` | Restore and compile the optional native fixture in Release. |
+| `Compatibility` | Run tests, fetch fresh references, build Debug, package Release, and compile the native fixture. |
+| `ValidateRelease` | Check `--release-tag` against the manifest and verify main-branch ancestry. |
+| `Checksum` | Build the package and write its `.zip.sha256` file. |
+| `Release` | Validate the tag, test, fetch fresh references, build Debug, package Release, and write the checksum. |
+
+Multiple targets share dependencies within one invocation, for example
+`dotnet run --project build -- --target Compile Package`. Parameters after the
+`--` belong to NUKE; `dotnet run --configuration Release` before it selects the
+runner's configuration, while `--configuration Release` after it selects the
+product build and test configuration. Packaging always builds Release.
+`Release` and `Compatibility` use Debug for their solution build by default;
+neither target runs gameplay checks or publishes a release.
+
 `ValheimManagedDir` defaults to the downloaded server's
 `.local/valheim-server/valheim_server_Data/Managed` directory. Override it when
 building against a different client or server installation:
 
 ```bash
-bash scripts/dev.sh build -p:ValheimManagedDir=/path/to/Managed
+dotnet run --project build -- --target Compile --valheim-managed-dir /path/to/Managed
 ```
+
+This uses the supplied assemblies without running SteamCMD; setup fetches only
+missing pinned mod dependencies. Relative paths resolve from the repository
+root. With an override, `--update-references` refreshes the mod dependencies and
+leaves the supplied game installation alone. `Release` and `Compatibility`
+require the default reference source so they can validate fresh downloads.
 
 Game downloads and dependency DLLs are ignored by Git and excluded from the
-release ZIP. `.local/references.json` records the Steam manifest/build ID,
-dependency versions, and assembly SHA-256 hashes. To update the game references
-deliberately and refetch pinned mod dependencies:
+release ZIP. `.local/references.json` records the Managed directory, dependency
+versions, and assembly SHA-256 hashes. Default downloads also record the Steam
+manifest/build ID; custom references use absolute hash keys for external files
+and do not claim the downloaded server's Steam manifest. To update the game
+references deliberately and refetch pinned mod dependencies:
 
 ```bash
-bash scripts/dev.sh setup --update
+dotnet run --project build -- --target Setup --update-references
 ```
 
-Normal builds never invoke SteamCMD. The original game assemblies are referenced
-directly; Harmony accesses the few private fields and methods needed by the mod.
+Compile and package targets fetch missing references automatically and reuse
+existing downloads. Core tests do not run reference setup. The original game
+assemblies are referenced directly; Harmony accesses the few private fields and
+methods needed by the mod.
 No publicizer or proprietary assemblies are committed.
 
 See [code structure](docs/ARCHITECTURE.md) for module responsibilities and adapter
@@ -173,12 +213,16 @@ build tested and the scenarios that require running Valheim.
 
 ## GitHub automation and releases
 
-Pull requests and pushes to `main` run two independent CI checks:
+Pull requests and pushes to `main` run two independent CI checks using the same
+NUKE targets as local development:
 
-- **tests** restores the core test project in locked mode and runs the C# and
-  Python suites without downloading Valheim.
-- **build-package** sets up game references, restores the solution in locked
-  mode, builds Debug, and produces the installable Release ZIP.
+- **tests** invokes `Test`, which restores the core test project in locked mode
+  and runs the C# and Python suites without downloading Valheim. Python tests
+  also exercise the real NUKE target graph against disposable repositories and
+  recording tools, checking dependency sharing, release gates, and failure handling.
+- **build-package** invokes `Compile Package`, which sets up game references,
+  restores the solution in locked mode, builds Debug, and produces the
+  installable Release ZIP.
 
 Open a run under **Actions → CI** to download `guild-chest-package`, test
 results, and build diagnostics. Artifacts are retained for 14 days. The package
@@ -194,9 +238,10 @@ image as the dev container, with build prerequisites but without its Codex
 installation or host credential mounts.
 
 **Valheim compatibility** runs every Monday at 06:17 UTC and can be started
-manually from Actions. It always checks `main` against fresh game references,
-runs the automated suites, builds/packages the plugin, and compiles the optional
-native fixture. Its diagnostics include setup/build logs, test results, and
+manually from Actions through the `Compatibility` target. It always checks
+`main` against fresh game references, runs the automated suites, builds/packages
+the plugin, and compiles the optional native fixture. Its diagnostics include
+setup/build logs, test results, and
 `references.json` with the Steam build and assembly hashes. Compilation does
 not establish native runtime or gameplay compatibility; use the validation
 checklist for those checks. Configure GitHub Actions notifications to receive
@@ -214,8 +259,9 @@ To release a new version:
    git push origin vX.Y.Z
    ```
 
-3. The **Release** workflow verifies that the tag is exactly `v<manifest version>`
-   and its commit belongs to `main`. It reruns tests, downloads fresh references
+3. The **Release** workflow invokes the NUKE `Release` target, which verifies
+   that the tag is exactly `v<manifest version>` and its commit belongs to
+   `main`. It reruns tests, downloads fresh references
    without using reference or NuGet caches, builds Debug, and packages Release.
 4. After validation succeeds, it creates a **draft GitHub release** containing
    generated release notes, the installable ZIP, and a `.zip.sha256` checksum.
@@ -229,6 +275,13 @@ publishing token is needed: only the final draft job receives `contents: write`
 through GitHub's built-in token. Publishing to Thunderstore remains a manual
 step. GitHub workflows do not bump versions, create tags, or publish drafts
 automatically.
+
+To exercise release validation and packaging locally without creating or
+publishing a GitHub release:
+
+```bash
+dotnet run --project build -- --target Release --release-tag v1.0.9
+```
 
 ### Transfer rejection troubleshooting
 
@@ -252,4 +305,5 @@ after replacement. Existing world inventories retain their save format.
 - `tests/GuildChest.Tests`: game-independent synchronization tests.
 - `tests/GuildChest.NativeSmoke`: optional native fixtures for a disposable server;
   see the validation notes. This test plugin is excluded from the release ZIP.
-- `scripts`: reference setup, build/test entrypoint, and deterministic packaging.
+- `build`: standalone NUKE build runner and shared game-reference properties.
+- `scripts`: Python reference setup, release validation, and deterministic packaging.

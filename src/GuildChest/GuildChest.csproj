@@ -24,6 +24,6 @@
                       Overwrite="true" WriteOnlyWhenDifferent="true" />
   </Target>
   <Target Name="CheckGameReferences" BeforeTargets="ResolveAssemblyReferences">
-    <Error Condition="!Exists('$(ModDependenciesDir)/Jotunn.dll')" Text="Mod dependencies are missing. Run bash scripts/dev.sh setup inside the dev container." />
+    <Error Condition="!Exists('$(ModDependenciesDir)/Jotunn.dll')" Text="Mod dependencies are missing. Run dotnet run --project build -- --target Setup inside the dev container." />
   </Target>
 </Project>

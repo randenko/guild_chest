@@ -6,18 +6,21 @@
 - `src/GuildChest.Core/`: game-independent .NET Standard 2.0 leases, revisions, and transfer lifecycle logic.
 - `tests/GuildChest.Tests/`: .NET 10 xUnit tests; `tests/test_package.py`: Python packaging tests.
 - `tests/GuildChest.NativeSmoke/`: optional BepInEx integration fixture, excluded from releases.
-- `scripts/` and `build/`: setup, packaging, and shared assembly references. `docs/` covers architecture, compatibility, and gameplay validation. Root `icon.png` supplies the package icon.
+- `build/`: standalone .NET 10 NUKE runner and shared assembly references; `scripts/`: Python setup, packaging, and release validation helpers. `docs/` covers architecture, compatibility, and gameplay validation. Root `icon.png` supplies the package icon.
 
 ## Build, Test, and Development Commands
 
 Use the VS Code dev container with Docker; `global.json` selects the .NET 10 SDK.
 
-- `bash scripts/dev.sh setup`: download game references and pinned dependencies; initial downloads are roughly 2.2 GB.
-- `bash scripts/dev.sh build`: compile the solution in Debug configuration.
-- `bash scripts/dev.sh test`: run xUnit and Python `unittest` checks.
-- `bash scripts/dev.sh package`: build Release binaries and generate `artifacts/GuildChest-<version>.zip` after validating build receipts.
+- `dotnet run --project build -- --help`: list NUKE targets and parameters; no global NUKE tool is required.
+- `dotnet run --project build -- --target Setup`: download game references and pinned dependencies; initial downloads are roughly 2.2 GB. Add `--update-references` to refresh.
+- `dotnet run --project build -- --target Compile`: prepare references, restore locked dependencies, and compile the solution in Debug configuration.
+- `dotnet run --project build -- --target Test`: run xUnit and Python `unittest` checks without downloading game references.
+- `dotnet run --project build -- --target Package`: build Release binaries and generate `artifacts/GuildChest-<version>.zip` after validating build receipts.
+- `dotnet run --project build -- --target Compatibility`: test against fresh references and compile the optional native fixture.
+- `dotnet run --project build -- --target Release --release-tag vX.Y.Z`: validate the tag/main ancestry, test, build with fresh references, and package with a checksum. Does not publish a release.
 
-Gameplay runs in a separately installed Valheim client or server. Override game references with `bash scripts/dev.sh build -p:ValheimManagedDir=/path/to/Managed`.
+Gameplay runs in a separately installed Valheim client or server. Override game references with `dotnet run --project build -- --target Compile --valheim-managed-dir /path/to/Managed`. Keep the NUKE package version and build project lock file pinned.
 
 ## Coding Style & Naming Conventions
 
@@ -25,7 +28,7 @@ Follow `.editorconfig`: UTF-8, LF, final newline, and four-space indentation; JS
 
 ## Testing Guidelines
 
-Name C# files `*Tests.cs` and use descriptive behavior names with `[Fact]` or `[Theory]`; Python files use `test_*.py` and methods use `test_*`. Add regression coverage for synchronization, transfer, and packaging changes. No numeric coverage threshold is configured. Run `bash scripts/dev.sh test` before submitting. Native/gameplay changes need relevant disposable-world checks from `docs/VALIDATION.md`; native fixtures are outside the normal test command.
+Name C# files `*Tests.cs` and use descriptive behavior names with `[Fact]` or `[Theory]`; Python files use `test_*.py` and methods use `test_*`. Add regression coverage for synchronization, transfer, and packaging changes. No numeric coverage threshold is configured. Run `dotnet run --project build -- --target Test` before submitting. Native/gameplay changes need relevant disposable-world checks from `docs/VALIDATION.md`; native fixtures are outside the normal test command.
 
 ## Commit & Pull Request Guidelines
 
