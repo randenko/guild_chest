@@ -56,14 +56,7 @@ public sealed class Plugin : BaseUnityPlugin
         container.m_checkGuardStone = true;
         container.m_autoDestroyEmpty = false;
         container.m_defaultItems = new DropTable();
-        foreach (var renderer in prefab.GetComponentsInChildren<Renderer>(true))
-        {
-            // Renderer.materials creates instances, leaving vanilla chest materials untouched.
-            foreach (var material in renderer.materials)
-            {
-                if (material.HasProperty("_Color")) material.color *= new Color(0.55f, 0.8f, 1f, 1f);
-            }
-        }
+        ChestAppearance.Apply(prefab);
         var config = new PieceConfig {
             Name = "Guild Chest", Description = "One inventory shared by every guild chest in this world.",
             PieceTable = "Hammer", CraftingStation = "piece_workbench"

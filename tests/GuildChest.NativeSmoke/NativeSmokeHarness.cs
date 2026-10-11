@@ -118,7 +118,8 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
                 var costs = piece.m_resources.ToDictionary(req => req.m_resItem.name, req => req.m_amount);
                 Check(costs.Count == 4 && costs["FineWood"] == 20 && costs["Iron"] == 10 &&
                     costs["SurtlingCore"] == 2 && costs["Coins"] == 250, "Recipe costs include 250 gold");
-                UnityEngine.Object.Instantiate(prefab, new Vector3(5000, 1000, 5000), Quaternion.identity);
+                var firstChest = UnityEngine.Object.Instantiate(prefab, new Vector3(5000, 1000, 5000), Quaternion.identity);
+                CheckChestAppearance(prefab, firstChest);
                 UnityEngine.Object.Instantiate(prefab, new Vector3(-5000, 1000, -5000), Quaternion.identity);
                 Check(Store!.ChestCount == 2, "World creation hooks register both chests");
                 var inventory = new Inventory("fixture", null, 8, 4);

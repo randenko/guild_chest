@@ -5,7 +5,7 @@ app 896660 on 2026-10-05. Exact Steam build ID and reference hashes are recorded
 locally in `.local/references.json`. A successful compile checks compatibility
 with this build's assemblies; future 1.x updates need verification.
 
-## Completed checks (through 2026-10-07)
+## Completed checks (through 2026-10-11)
 
 - The dev container image builds successfully and runs the solution as the
   non-root `vscode` user with .NET SDK 10.0.401.
@@ -112,6 +112,15 @@ with this build's assemblies; future 1.x updates need verification.
   exact costs: 20 fine wood, 10 iron, 2 surtling cores and 250 coins. Prefab
   registration, dimensions, item serialization and world saving pass. Release
   and native-fixture builds have no warnings or errors.
+- The gold coin appearance change passes the native registration fixture:
+  combined coin meshes retain vanilla gold materials, add no pickups, colliders
+  or network components, and leave the vanilla chest and coin prefabs undecorated.
+  Native opening and closing switches between the decorated lids correctly.
+  Recipe costs, dimensions, serialization, world saving/reloading and final-chest
+  spilling still pass, with exactly the two expected shared-item drops; all
+  13 C# and 30 Python tests pass, and Release/native-fixture builds have no
+  warnings or errors. Lighting and visible surface placement require the client
+  checks below.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
@@ -200,8 +209,13 @@ These checks require a running client; automated core tests cannot verify UI,
 rendering, controller input, or a multiplayer player's inventory.
 
 - [ ] Solo: guild chest appears in the hammer menu; recipe needs a workbench,
-  20 fine wood, 10 iron, 2 surtling cores and 250 gold; the model is distinctly
-  blue; vanilla chest materials are unchanged.
+  20 fine wood, 10 iron, 2 surtling cores and 250 gold; the model has a warm gold tint,
+  gold coin seals and studs on both faces, and five coins across the lid;
+  vanilla chest and coin materials are unchanged.
+- [ ] Inspect the coin details in daylight, torchlight and shade; open and close
+  the chest and confirm that the coins follow the lid without floating or clipping.
+  Check the placement ghost, rotation, damaged chest and save/reload appearance.
+  Decorative coins cannot be picked up and add no collision or extra resource drops.
 - [ ] Deposit at A, travel far enough to unload A, withdraw at B. Repeat across
   distant islands and with more than two chests.
 - [ ] Drag, quick-transfer, split-stack, swap occupied slots, Take All, Stack All,
