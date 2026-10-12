@@ -133,6 +133,13 @@ with this build's assemblies; future 1.x updates need verification.
   for changed DLLs of the same size across releases and rebuilds, upgrades from
   the legacy fixed timestamp, and identical archives despite differing file
   modification times and packaging timezones.
+- The coin mounting correction passes independent native mesh raycasts for all
+  ten body coins and the five coins on each lid model. Their undersides sit
+  slightly inside the actual mounting surfaces rather than above the mesh bounds.
+  Native decoration registration, lid switching, recipe costs, serialization and
+  world saving still pass. All 13 C# and 38 Python tests pass; Release and native
+  fixture builds have no warnings or errors. Client lighting and visible clipping
+  remain manual checks below.
 
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
