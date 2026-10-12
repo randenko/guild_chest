@@ -65,7 +65,7 @@ Linux host. No host .NET SDK or Unity Editor is required.
    dotnet run --project build -- --target Package
    ```
 
-The release ZIP is written to `artifacts/GuildChest-1.0.11.zip`, visible in the
+The release ZIP is written to `artifacts/GuildChest-1.0.12.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
 and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create downloads
 missing references and restores NuGet packages; updating existing game references
@@ -309,7 +309,7 @@ To exercise release validation and packaging locally without creating or
 publishing a GitHub release:
 
 ```bash
-dotnet run --project build -- --target Release --release-tag v1.0.11
+dotnet run --project build -- --target Release --release-tag v1.0.12
 ```
 
 ### Transfer rejection troubleshooting
