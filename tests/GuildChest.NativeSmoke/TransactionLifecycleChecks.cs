@@ -60,7 +60,7 @@ public sealed partial class NativeSmokeHarness
     }
     private IEnumerator RunTransactionRegressions(Player player, Container chest, Container ordinary, Container second)
     {
-        var faultHooks = new Harmony("com.randenko.guildchest.smoke.lifecycle");
+        var faultHooks = new Harmony(Id + ".lifecycle");
         faultHooks.Patch(AccessTools.Method(host, "Handle"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ObserveCommitRequest)));
         faultHooks.Patch(AccessTools.Method(ClientType.GetNestedType("Transaction", BindingFlags.NonPublic), "Apply"),
             prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(FailPreparation)));
