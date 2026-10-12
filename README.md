@@ -17,6 +17,8 @@ client and the host, with matching Guild Chest versions.
 - Build a **Guild Chest** with the hammer near a workbench, using **20 fine wood,
   10 iron, 2 surtling cores, and 250 gold**. Its warm gold-tinted reinforced chest
   carries large gold coin seals, smaller coin studs, and a row of coins on the lid.
+- Find it immediately after the reinforced chest in the hammer menu. Its icon
+  shows the gold tint and coin decorations and faces left like the other chests.
 - Every guild chest accesses the same **32 slots (8 × 4)**, even across the
   entire map or when other chest locations are unloaded.
 - One player can use the shared inventory at a time. Normal ward permissions

@@ -12,6 +12,16 @@ with this build's assemblies; future 1.x updates need verification.
 - Full solution and Release plugin builds succeed without warnings or errors.
 - All **15** core synchronization/lifecycle tests and **38** Python packaging,
   release-validation and build-orchestration tests pass.
+- The hammer-menu icon is rendered from the gold-decorated chest prefab, with
+  its facing direction and viewing angle tuned to match the vanilla chest icons.
+  The user visually confirmed the final icon, including all three angle
+  adjustments, in the client hammer menu.
+- Native inspection confirms exactly one guild chest immediately after the
+  reinforced chest in the hammer's piece list, on both a fresh world and a
+  saved-world reload. Menu position was also visually confirmed in the client.
+- The final hammer-menu changes pass Release/native-fixture builds and the
+  headless prefab-registration, recipe, coin-appearance, serialization and
+  world-save checks.
 - The reference setup succeeds through anonymous SteamCMD; a repeated setup
   skips installed downloads. Package metadata and the 256 × 256 PNG are valid,
   and the release ZIP contains only the intended package files.
@@ -250,10 +260,16 @@ Record mode, game build, dependencies, result, and relevant logs for each run.
 These checks require a running client; automated core tests cannot verify UI,
 rendering, controller input, or a multiplayer player's inventory.
 
-- [ ] Solo: guild chest appears in the hammer menu; recipe needs a workbench,
-  20 fine wood, 10 iron, 2 surtling cores and 250 gold; the model has a warm gold tint,
-  gold coin seals and studs on both faces, and five coins across the lid;
-  vanilla chest and coin materials are unchanged.
+- [x] Client hammer menu (confirmed by the user): guild chest appears immediately
+  after the reinforced chest, with an icon showing its gold tint and coin
+  decorations, facing left with a viewing angle consistent with the vanilla
+  chest icons.
+- [ ] Return to the main menu and load a world again; confirm the hammer-menu
+  ordering and icon in both the menu grid and selected-piece preview.
+- [ ] Solo: recipe needs a workbench, 20 fine wood, 10 iron, 2 surtling cores and
+  250 gold; the model has a warm gold tint, gold coin seals and studs on both
+  faces, and five coins across the lid; vanilla chest and coin materials are
+  unchanged.
 - [ ] Inspect the coin details in daylight, torchlight and shade; open and close
   the chest and confirm that the coins follow the lid without floating or clipping.
   Check the placement ghost, rotation, damaged chest and save/reload appearance.
