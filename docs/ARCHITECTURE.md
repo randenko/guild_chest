@@ -44,8 +44,7 @@ values are read when used, so upstream setting changes still apply.
 Chest removal revokes the chest's lease and always retains the inventory and
 revision in the independent world-state record, including with zero access
 points. Registering a rebuilt chest restores access after removal or a world
-reload. New removals never create spill journals. Pending spills saved by older
-versions continue their existing recovery process on world load.
+reload. Chest removal never drops shared contents.
 
 Upstream transfer rules run inside `InventoryAccess.StagingScope`, which restores
 the original player and chest inventories on disposal. It also restores an

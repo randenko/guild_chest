@@ -7,7 +7,7 @@ namespace GuildChest.Core;
 public enum AccessResult
 {
     Accepted, Busy, UnknownChest, InvalidSession, StaleRevision, InvalidSequence,
-    AccessDenied, InvalidInventory, ItemMismatch, InvalidDimensions, RecoveryPending
+    AccessDenied, InvalidInventory, ItemMismatch, InvalidDimensions
 }
 
 public sealed class StoreSnapshot
