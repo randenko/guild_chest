@@ -160,7 +160,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
             {
                 Check(Store!.ChestCount == 1, "First chest deletion acknowledged");
                 ValidateItems(Decode(Store.Snapshot().Inventory));
-                Check(!Objects.Any(zdo => zdo.GetString("gc_spill_id") != "" && zdo.GetPrefab() != "GuildChestWorldState".GetStableHashCode()), "No contents dropped before final removal");
+                ValidateNoSharedDrops();
                 Check(Store.Open(ZNet.GetUID(), chests[1].m_uid.ToString(), Time.unscaledTime, out _) == AccessResult.Accepted, "Final chest lease acquired");
                 chests[1].SetOwner(ZNet.GetUID()); ZDOMan.instance.DestroyZDO(chests[1]);
             }
@@ -197,8 +197,13 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
         var state = Objects.Single(zdo => zdo.GetPrefab() == "GuildChestWorldState".GetStableHashCode());
         Check(snapshot.Inventory.SequenceEqual(state.GetByteArray("gc_inventory_v1")) && snapshot.Revision == state.GetLong("gc_revision"),
             "Retained inventory and revision persisted in world state");
-        Check(state.GetByteArray("gc_pending_spill", Array.Empty<byte>()).Length == 0, "No spill journal created");
-        Check(!Objects.Any(zdo => zdo.GetString("gc_spill_id") != ""), "No shared items dropped");
+        ValidateNoSharedDrops();
+    }
+    private void ValidateNoSharedDrops()
+    {
+        int oreHash = "Iron".GetStableHashCode();
+        int weaponHash = "SwordIron".GetStableHashCode();
+        Check(!Objects.Any(zdo => zdo.GetPrefab() == oreHash || zdo.GetPrefab() == weaponHash), "No shared items dropped");
     }
     private static void ValidateItems(Inventory inventory)
     {

@@ -12,7 +12,6 @@ internal static class Host
 {
     private const string ItemsKey = "gc_inventory_v1";
     private const string RevisionKey = "gc_revision";
-    private const string LegacySpillKey = "gc_pending_spill";
     internal static SharedStore? Store;
     private static ZDO? state;
     private static ZDOMan? manager;
@@ -45,7 +44,7 @@ internal static class Host
             if (area) wardRadii[pair.Key] = area.m_radius;
         }
         foreach (var zdo in Objects) Register(zdo);
-        Persist(); ResumeLegacySpill();
+        Persist();
         Plugin.LogInfo($"Guild Chest authority ready: {Store.ChestCount} chests; Valheim {(global::Version.GetVersionString())}.");
     }
 
@@ -68,36 +67,6 @@ internal static class Host
         if (zdo.GetPrefab() != Plugin.ChestHash) return;
         if (!Store.Remove(zdo.m_uid.ToString())) return;
         Persist();
-    }
-    // Finish journals written by earlier versions; new chest removals never create spills.
-    private static void ResumeLegacySpill()
-    {
-        if (state == null) return;
-        byte[] bytes = state.GetByteArray(LegacySpillKey);
-        if (bytes == null || bytes.Length == 0) return;
-        try
-        {
-            var inventory = InventoryCodec.Read(bytes);
-            string id = state.GetString("gc_spill_id");
-            long completed = state.GetLong("gc_spill_done");
-            var existing = new HashSet<int>(Objects.Where(zdo => zdo.GetString("gc_spill_id") == id && !IsState(zdo)).Select(zdo => zdo.GetInt("gc_spill_index")));
-            var items = inventory.GetAllItems();
-            for (int i = 0; i < items.Count; i++)
-            {
-                long bit = 1L << i;
-                if ((completed & bit) != 0) continue;
-                if (!existing.Contains(i))
-                {
-                    var position = state.GetVec3("gc_spill_position", Vector3.zero) + Vector3.up * 0.5f + new Vector3((i % 4) * 0.15f, 0, (i / 4) * 0.15f);
-                    var drop = ItemDrop.DropItem(items[i], 0, position, Quaternion.identity);
-                    var zdo = drop.GetComponent<ZNetView>().GetZDO();
-                    zdo.Set("gc_spill_id", id); zdo.Set("gc_spill_index", i);
-                }
-                completed |= bit; state.Set("gc_spill_done", completed);
-            }
-            state.Set(LegacySpillKey, Array.Empty<byte>());
-        }
-        catch (Exception exception) { Plugin.Error(exception); /* Retain pending contents for recovery. */ }
     }
 
     internal static void Tick()
@@ -181,18 +150,11 @@ internal static class Host
                 }
                 else if (operation == Operation.Open || operation == Operation.OpenAutomation)
                 {
-                    if (state.GetByteArray(LegacySpillKey, Array.Empty<byte>()).Length > 0)
-                    {
-                        result = AccessResult.RecoveryPending; reason = "Items from an older version are awaiting recovery. Check the server log.";
-                    }
-                    else
-                    {
-                        // Fail closed if an item mod has been removed or the save format changed.
-                        ReadInventory(Store.Snapshot().Inventory, "stored guild inventory");
-                        result = Store.Open(sender, chestId.ToString(), Time.unscaledTime, out var lease);
-                        replyToken = lease?.Token ?? "";
-                        if (result == AccessResult.Accepted) automationToken = operation == Operation.OpenAutomation ? replyToken : "";
-                    }
+                    // Fail closed if an item mod has been removed or the save format changed.
+                    ReadInventory(Store.Snapshot().Inventory, "stored guild inventory");
+                    result = Store.Open(sender, chestId.ToString(), Time.unscaledTime, out var lease);
+                    replyToken = lease?.Token ?? "";
+                    if (result == AccessResult.Accepted) automationToken = operation == Operation.OpenAutomation ? replyToken : "";
                 }
                 else if (operation == Operation.Heartbeat && Store.ActiveLease?.Chest == chestId.ToString())
                 {

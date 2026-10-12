@@ -154,8 +154,8 @@ with this build's assemblies; future 1.x updates need verification.
 
 Standard final-chest retention passes both runs of the native headless fixture
 on Valheim 1.0.16. Destroying the only chest revokes its active lease without
-changing inventory or revision, creates no spill journal or item drops, and saves
-the contents with no access points. Restarting that world preserves the iron
+changing inventory or revision, drops no shared items, and saves the contents
+with no access points. Restarting that world preserves the iron
 stack and sword metadata; a rebuilt chest grants access. Destroying the rebuilt
 chest retains the items again. The Release plugin and native fixture compile
 without warnings or errors. Live client behavior remains a manual check below.
@@ -223,9 +223,9 @@ destruction. It exits the server when finished and writes the marker or a
 
 For final-chest retention, use a fresh disposable world and marker, and also set
 `GUILDCHEST_SMOKE_RETENTION=1` for both runs. The first run destroys the only chest
-while its lease is active, verifies no spill or inventory changes, and saves the
-world with no chests. The second restores the items, rebuilds a chest and opens
-it, then destroys it and verifies retention again with preserved metadata.
+while its lease is active, verifies no shared-content drops or inventory changes,
+and saves the world with no chests. The second restores the items, rebuilds a chest
+and opens it, then destroys it and verifies retention again with preserved metadata.
 
 For the scripted host-transfer checks, use another fresh disposable world and
 marker, and also set `GUILDCHEST_SMOKE_TRANSPORT=1`. Never install this test
@@ -322,10 +322,6 @@ rendering, controller input, or a multiplayer player's inventory.
 
 ## Recovery behavior
 
-Pending spills saved by older versions retain their existing recovery process:
-remaining items and progress stay in the world state, and the host retries on
-world load without emitting already recorded drops again. New chest destruction
-always preserves shared contents and never creates a spill journal.
 Missing item prefabs or unsupported serialization block access while
 preserving stored bytes. Restore the appropriate item mod/version before retrying.
 Unresolved prefabs in the player's inventory can remain there during unrelated
