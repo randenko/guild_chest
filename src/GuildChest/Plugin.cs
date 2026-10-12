@@ -39,6 +39,7 @@ public sealed class Plugin : BaseUnityPlugin
         // A host player's replies are delivered on the server too, so both roles must handle responses.
         ReplyRpc = NetworkManager.Instance.AddRPC(Protocol.ReplyRpc, Client.Receive, Client.Receive);
         PrefabManager.OnVanillaPrefabsAvailable += RegisterPrefabs;
+        PieceManager.OnPiecesRegistered += OrderHammerPieces;
         harmony = new Harmony(Id);
         harmony.PatchAll(typeof(Plugin).Assembly);
         StorageCompatibility.Install(harmony);
@@ -57,9 +58,12 @@ public sealed class Plugin : BaseUnityPlugin
         container.m_autoDestroyEmpty = false;
         container.m_defaultItems = new DropTable();
         ChestAppearance.Apply(prefab);
+        // Match the vanilla chest icons' facing direction and viewing angle.
+        var iconRotation = RenderManager.IsometricRotation.eulerAngles;
         var config = new PieceConfig {
             Name = "Guild Chest", Description = "One inventory shared by every guild chest in this world.",
-            PieceTable = "Hammer", CraftingStation = "piece_workbench"
+            PieceTable = "Hammer", CraftingStation = "piece_workbench",
+            Icon = RenderManager.Instance.Render(prefab, Quaternion.Euler(iconRotation.x - 6f, -iconRotation.y - 5f, -iconRotation.z + 7.5f))
         };
         config.AddRequirement("FineWood", 20); config.AddRequirement("Iron", 10); config.AddRequirement("SurtlingCore", 2);
         config.AddRequirement("Coins", 250);
@@ -74,11 +78,24 @@ public sealed class Plugin : BaseUnityPlugin
         PrefabManager.OnVanillaPrefabsAvailable -= RegisterPrefabs;
     }
 
+    private static void OrderHammerPieces()
+    {
+        var hammer = PieceManager.Instance.GetPieceTable("Hammer");
+        if (!hammer) return;
+        var pieces = hammer.m_pieces;
+        var guildChest = pieces.Find(piece => piece && piece.name == ChestName);
+        var reinforcedChest = pieces.Find(piece => piece && piece.name == "piece_chest");
+        if (!guildChest || !reinforcedChest) return;
+        pieces.Remove(guildChest);
+        pieces.Insert(pieces.IndexOf(reinforcedChest) + 1, guildChest);
+    }
+
     private void Update() { Host.Tick(); Client.Tick(); StorageCompatibility.Tick(); }
     private static IEnumerator IgnoreRequest(long sender, ZPackage package) { yield break; }
     private void OnDestroy()
     {
         PrefabManager.OnVanillaPrefabsAvailable -= RegisterPrefabs;
+        PieceManager.OnPiecesRegistered -= OrderHammerPieces;
         harmony?.UnpatchSelf();
     }
     internal static void Error(Exception exception) => Instance.Logger.LogError(exception);

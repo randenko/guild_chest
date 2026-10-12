@@ -6,6 +6,8 @@ mods supply their own rules through adapters.
 
 | Module | Responsibility |
 | --- | --- |
+| `Plugin` | Startup, prefab registration, hammer icon and piece ordering |
+| `ChestAppearance` | Gold chest tint and mounted coin geometry |
 | `GuildChest.Core` | Leases, revisions, replay receipts and transfer/completion state |
 | `Protocol` | V1 operation numbers, package headers, dimensions and timing constants |
 | `Host` | World persistence, access checks, conservation and access-point removal |
@@ -20,6 +22,19 @@ mods supply their own rules through adapters.
 | `BuildingContinuation` | Resume the native placement loop after material acknowledgement |
 | `StorageBindings` / `ContainerBindings` | Validated optional-mod bindings / cached wrapper access |
 | `StorageCompatibility` | Adapter installation, updates and world reset |
+
+The guild chest's hammer icon is rendered from its prefab after
+`ChestAppearance.Apply` adds the gold tint and coin decorations. Using Jötunn's
+isometric Euler angles `(x, y, z)` as the base, the final icon rotation is
+`(x - 6, -y - 5, -z + 7.5)` degrees. These angles apply to the icon's render
+clone. The facing direction and viewing angle were tuned against the vanilla
+chest icons in the client hammer menu.
+
+`Plugin` handles `PieceManager.OnPiecesRegistered` by moving the guild chest
+immediately after the reinforced chest (`piece_chest`) in the hammer's piece
+list. The handler remains subscribed across world loads so rebuilt piece tables
+receive the same ordering, and is unsubscribed on plugin shutdown. Missing
+hammer or chest entries leave the current list intact.
 
 Required adapter members are resolved before any hooks are installed. Failed
 installation removes that adapter's hooks and logs its unavailable bindings.
