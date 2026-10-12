@@ -167,6 +167,19 @@ appearance, recipe, serialization and world saving pass. All 15 C# and 38 Python
 tests pass, and the Release plugin and native fixture build without warnings or
 errors.
 
+Version **1.0.12** passes all 15 C# and 38 Python tests and categorized release-note
+validation. Debug, Release/package, and native-fixture builds have no warnings or
+errors. The headless fixture loads `Guild Chest 1.0.12` under `randenko.GuildChest`
+on Valheim 1.0.16 (Steam build 25527701), with BepInExPack 5.4.2351 and Jotunn
+2.30.2. Both standard fixture runs pass chest appearance, recipe, registration,
+serialization, world save/reload, unloaded-chest retention, final-chest retention,
+lease revocation, and preserved item metadata. Both dedicated retention runs pass
+saving and restarting with no chests, retrieving the retained items after
+rebuilding, and repeated final-chest destruction without shared-content drops.
+The ZIP passes integrity and manifest-version checks and contains only the
+intended package files. The user-confirmed hammer menu and remaining client
+checks are recorded below.
+
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
 player-spawn lifecycle. It binds the native
