@@ -1,11 +1,11 @@
-# Guild Chest
+# Valheim - GuildChest
 
 <!-- CI covers tests and packaging on main pushes. Host fixed badge images in this
 repository to avoid third-party API lookups and image-proxy timeouts. The release
 badge links to the latest published release without hard-coding a version. -->
-[![CI](https://github.com/randenko/guild_chest/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/randenko/guild_chest/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
-[![Latest release](https://raw.githubusercontent.com/randenko/guild_chest/main/docs/badges/release.svg)](https://github.com/randenko/guild_chest/releases/latest)
-[![MIT License](https://raw.githubusercontent.com/randenko/guild_chest/main/docs/badges/license.svg)](https://github.com/randenko/guild_chest/blob/main/LICENSE)
+[![CI](https://github.com/randenko/valheim-guildchest/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/randenko/valheim-guildchest/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+[![Latest release](https://raw.githubusercontent.com/randenko/valheim-guildchest/main/docs/badges/release.svg)](https://github.com/randenko/valheim-guildchest/releases/latest)
+[![MIT License](https://raw.githubusercontent.com/randenko/valheim-guildchest/main/docs/badges/license.svg)](https://github.com/randenko/valheim-guildchest/blob/main/LICENSE)
 
 A Valheim 1.x mod that makes every guild chest in a world an access point to
 one shared inventory. Supports single-player, player-hosted multiplayer, and
