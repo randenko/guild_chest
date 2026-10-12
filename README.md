@@ -82,6 +82,22 @@ the corresponding directories inside `.codex`, keeping executable symlinks,
 process IDs, and sockets local to
 the container while sharing the rest of your Codex state with the host.
 
+Codex's Linux sandbox uses Bubblewrap to create nested namespaces. The container
+installs `bubblewrap` explicitly and starts with `--security-opt seccomp=unconfined`
+to allow the namespace calls that Docker's default seccomp filter blocks. This
+disables Docker's syscall filtering for this dev container; Codex still enforces
+its own filesystem and network sandbox. After **Dev Containers: Rebuild Container**,
+verify the sandbox from the container terminal with:
+
+```bash
+codex sandbox -- true
+```
+
+The command should exit successfully. A `bwrap: No permissions to create new
+namespace` error means the container or host still blocks namespace creation.
+See [OpenAI's sandbox guidance](https://learn.chatgpt.com/docs/agent-approvals-security#os-level-sandbox)
+for container requirements.
+
 The dev container mounts the Linux host's `~/.ssh` directory read-only at
 `/home/vscode/.ssh`, so Git can use your existing GitHub SSH key. After changing
 the container configuration, run **Dev Containers: Rebuild Container** to apply
