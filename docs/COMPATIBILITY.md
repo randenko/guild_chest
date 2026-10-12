@@ -118,7 +118,7 @@ consumption. Ordinary containers retain those features.
 
 ## Range and permissions
 
-`BepInEx/config/com.randenko.guildchest.cfg` contains:
+`BepInEx/config/randenko.GuildChest.cfg` contains:
 
 ```ini
 [Compatibility]

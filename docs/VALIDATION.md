@@ -150,6 +150,13 @@ stack and sword metadata; a rebuilt chest grants access. Destroying the rebuilt
 chest retains the items again. The Release plugin and native fixture compile
 without warnings or errors. Live client behavior remains a manual check below.
 
+The plugin-ID change passes isolated headless startup: BepInEx logs
+`Loading [Guild Chest 1.0.11] (randenko.GuildChest)`, loads the dependent native
+fixture, and creates `BepInEx/config/randenko.GuildChest.cfg`. Chest registration,
+appearance, recipe, serialization and world saving pass. All 15 C# and 38 Python
+tests pass, and the Release plugin and native fixture build without warnings or
+errors.
+
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
 player-spawn lifecycle. It binds the native

@@ -11,10 +11,11 @@ using UnityEngine;
 
 namespace GuildChest.NativeSmoke;
 
-[BepInPlugin("com.randenko.guildchest.smoke", "Guild Chest Native Verification", "1.0.0")]
+[BepInPlugin(Id, "Guild Chest Native Verification", "1.0.0")]
 [BepInDependency(GuildChest.Plugin.Id)]
 public sealed partial class NativeSmokeHarness : BaseUnityPlugin
 {
+    private const string Id = GuildChest.Plugin.Id + ".smoke";
     private const BindingFlags Flags = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
     private readonly Type host = typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.Host")!;
     private readonly Type codec = typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.InventoryCodec")!;
@@ -37,16 +38,16 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
     {
         fixture = this;
         if (Environment.GetEnvironmentVariable("GUILDCHEST_SMOKE_TRANSPORT") == "1")
-            new Harmony("com.randenko.guildchest.smoke.keepalive").Patch(AccessTools.Method(typeof(ZNetScene), "RemoveObjects"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(KeepFixtureObjects)));
+            new Harmony(Id + ".keepalive").Patch(AccessTools.Method(typeof(ZNetScene), "RemoveObjects"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(KeepFixtureObjects)));
         if (Environment.GetEnvironmentVariable("GUILDCHEST_SMOKE_COMPAT") == "1")
         {
-            new Harmony("com.randenko.guildchest.smoke.delay").Patch(AccessTools.Method(typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.Client"), "Handle"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(DelayCommitReply)));
-            new Harmony("com.randenko.guildchest.smoke.effects").Patch(AccessTools.Method(typeof(EffectList), "Create"), postfix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ObserveTransferEffect)));
-            new Harmony("com.randenko.guildchest.smoke.placement").Patch(AccessTools.Method(typeof(Player), "UpdatePlacementGhost"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(KeepPortalPlacement)));
-            new Harmony("com.randenko.guildchest.smoke.ghost").Patch(AccessTools.Method(typeof(Player), "SetupPlacementGhost"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(KeepPortalPlacement)));
-            new Harmony("com.randenko.guildchest.smoke.portalspawn").Patch(AccessTools.Method(typeof(Player), "PlacePiece"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(PlaceHeadlessPortal)));
-            new Harmony("com.randenko.guildchest.smoke.clientrole").Patch(AccessTools.Method(typeof(ZNet), "IsServer"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ClientRoleForAuthorityTick)));
-            new Harmony("com.randenko.guildchest.smoke.messages").Patch(AccessTools.Method(typeof(Character), "Message"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ObserveBuildMessage)));
+            new Harmony(Id + ".delay").Patch(AccessTools.Method(typeof(GuildChest.Plugin).Assembly.GetType("GuildChest.Client"), "Handle"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(DelayCommitReply)));
+            new Harmony(Id + ".effects").Patch(AccessTools.Method(typeof(EffectList), "Create"), postfix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ObserveTransferEffect)));
+            new Harmony(Id + ".placement").Patch(AccessTools.Method(typeof(Player), "UpdatePlacementGhost"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(KeepPortalPlacement)));
+            new Harmony(Id + ".ghost").Patch(AccessTools.Method(typeof(Player), "SetupPlacementGhost"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(KeepPortalPlacement)));
+            new Harmony(Id + ".portalspawn").Patch(AccessTools.Method(typeof(Player), "PlacePiece"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(PlaceHeadlessPortal)));
+            new Harmony(Id + ".clientrole").Patch(AccessTools.Method(typeof(ZNet), "IsServer"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ClientRoleForAuthorityTick)));
+            new Harmony(Id + ".messages").Patch(AccessTools.Method(typeof(Character), "Message"), prefix: new HarmonyMethod(typeof(NativeSmokeHarness), nameof(ObserveBuildMessage)));
         }
     }
     private static void ObserveBuildMessage(object[] __args)

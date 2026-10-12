@@ -43,7 +43,7 @@ public sealed partial class NativeSmokeHarness
 
         var reflection = assembly.GetType("GuildChest.StorageBindings")!;
         var hook = AccessTools.Method(typeof(NativeSmokeHarness), nameof(BindingTarget));
-        var harmony = new Harmony("com.randenko.guildchest.smoke.bindings");
+        var harmony = new Harmony(Id + ".bindings");
         try
         {
             bool rejected = false;

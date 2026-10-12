@@ -18,7 +18,7 @@ namespace GuildChest;
 [NetworkCompatibility(CompatibilityLevel.EveryoneMustHaveMod, VersionStrictness.Patch)]
 public sealed class Plugin : BaseUnityPlugin
 {
-    public const string Id = "com.randenko.guildchest";
+    public const string Id = "randenko.GuildChest";
     public const string ModVersion = BuildVersion.Value;
     public const string ChestName = "GuildChest";
     internal const string StateName = "GuildChestWorldState";
