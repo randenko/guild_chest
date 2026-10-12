@@ -3,6 +3,7 @@
   "build": { "dockerfile": "Dockerfile", "context": ".." },
   "remoteUser": "vscode",
   "updateRemoteUserUID": true,
+  "runArgs": ["--security-opt", "seccomp=unconfined"],
   "mounts": [
     "source=guild-chest-nuget,target=/home/vscode/.nuget/packages,type=volume",
     "source=guild-chest-gh,target=/home/vscode/.config/gh,type=volume",

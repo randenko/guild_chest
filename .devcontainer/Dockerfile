@@ -3,7 +3,7 @@ FROM mcr.microsoft.com/devcontainers/dotnet:2-10.0-noble@sha256:9eb314432a5fa677
 USER root
 ENV TZ=America/New_York
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    lib32gcc-s1 lib32stdc++6 python3 unzip curl ca-certificates xclip tzdata \
+    lib32gcc-s1 lib32stdc++6 python3 unzip curl ca-certificates xclip tzdata bubblewrap \
     && ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime \
     && echo "${TZ}" > /etc/timezone \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
