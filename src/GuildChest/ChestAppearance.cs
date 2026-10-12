@@ -28,7 +28,8 @@ internal static class ChestAppearance
         var container = prefab.GetComponent<Container>();
         var closedLid = container.m_closed ? container.m_closed.GetComponent<MeshFilter>() : null;
         var openLid = container.m_open ? container.m_open.GetComponent<MeshFilter>() : null;
-        if (!coin || !coinRenderer || !coin.sharedMesh.isReadable || !body || !closedLid || !openLid)
+        if (!coin || !coinRenderer || !coin.sharedMesh.isReadable || !body || !closedLid || !openLid ||
+            !body.sharedMesh.isReadable || !closedLid.sharedMesh.isReadable)
         {
             Plugin.LogWarning("Guild chest coin decorations unavailable: expected vanilla coin or chest meshes are missing.");
             return;
@@ -40,19 +41,19 @@ internal static class ChestAppearance
         {
             var rotation = Quaternion.Euler(90f * face, 0f, 0f);
             float surface = face < 0 ? bodyBounds.min.z : bodyBounds.max.z;
-            AddCoin(bodyCoins, coin.sharedMesh,
+            AddCoin(bodyCoins, coin.sharedMesh, body.sharedMesh,
                 new Vector3(bodyBounds.center.x, bodyBounds.center.y, surface), rotation, 0.46f);
             // Small mounted coins frame the central treasury seal on either face.
             foreach (float x in new[] { -0.55f, 0.55f })
                 foreach (float y in new[] { 0.38f, 0.72f })
-                    AddCoin(bodyCoins, coin.sharedMesh, new Vector3(x, y, surface), rotation, 0.13f);
+                    AddCoin(bodyCoins, coin.sharedMesh, body.sharedMesh, new Vector3(x, y, surface), rotation, 0.13f);
         }
         AddDecoration(body.transform, Combine("GuildChestCoinSeals", bodyCoins), coinRenderer);
 
         var lidCoins = new List<CombineInstance>();
         var lidBounds = closedLid.sharedMesh.bounds;
         for (int i = -2; i <= 2; i++)
-            AddCoin(lidCoins, coin.sharedMesh,
+            AddCoin(lidCoins, coin.sharedMesh, closedLid.sharedMesh,
                 new Vector3(lidBounds.center.x + i * 0.23f, lidBounds.max.y, lidBounds.center.z),
                 Quaternion.Euler(0f, i * 18f, 0f), i == 0 ? 0.23f : 0.17f);
         var lidMesh = Combine("GuildChestCoinLid", lidCoins);
@@ -62,17 +63,48 @@ internal static class ChestAppearance
         AddDecoration(openLid.transform, lidMesh, coinRenderer);
     }
 
-    private static void AddCoin(List<CombineInstance> instances, Mesh coin, Vector3 surface,
+    private static void AddCoin(List<CombineInstance> instances, Mesh coin, Mesh mountingMesh, Vector3 surface,
         Quaternion rotation, float diameter)
     {
         var bounds = coin.bounds;
         float scale = diameter / Mathf.Max(bounds.size.x, bounds.size.z);
-        // The coin's thin axis is Y. Place its underside just above the mounting surface.
-        var position = surface + rotation * Vector3.up * (bounds.extents.y * scale + 0.006f);
+        var outward = rotation * Vector3.up;
+        // Bounds include raised trim. Mount on the actual panel beneath each coin,
+        // with its underside slightly embedded so there is no visible air gap.
+        surface = FindSurface(mountingMesh, surface, outward);
+        var position = surface + outward * (bounds.extents.y * scale - 0.001f);
         instances.Add(new CombineInstance {
             mesh = coin,
             transform = Matrix4x4.TRS(position - rotation * (bounds.center * scale), rotation, Vector3.one * scale)
         });
+    }
+
+    private static Vector3 FindSurface(Mesh mesh, Vector3 surface, Vector3 outward)
+    {
+        // Find the nearest triangle along an inward ray in mesh-local space.
+        var origin = surface + outward;
+        var direction = -outward;
+        var vertices = mesh.vertices;
+        var triangles = mesh.triangles;
+        float nearest = float.PositiveInfinity;
+        for (int i = 0; i < triangles.Length; i += 3)
+        {
+            var a = vertices[triangles[i]];
+            var edge1 = vertices[triangles[i + 1]] - a;
+            var edge2 = vertices[triangles[i + 2]] - a;
+            var p = Vector3.Cross(direction, edge2);
+            float determinant = Vector3.Dot(edge1, p);
+            if (Mathf.Abs(determinant) < 0.000001f) continue;
+            var offset = origin - a;
+            float u = Vector3.Dot(offset, p) / determinant;
+            if (u < 0f || u > 1f) continue;
+            var q = Vector3.Cross(offset, edge1);
+            float v = Vector3.Dot(direction, q) / determinant;
+            if (v < 0f || u + v > 1f) continue;
+            float distance = Vector3.Dot(edge2, q) / determinant;
+            if (distance >= 0f && distance < nearest) nearest = distance;
+        }
+        return float.IsPositiveInfinity(nearest) ? surface : origin + direction * nearest;
     }
 
     private static Mesh Combine(string name, List<CombineInstance> coins)
