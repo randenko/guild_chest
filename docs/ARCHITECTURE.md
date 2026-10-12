@@ -8,7 +8,7 @@ mods supply their own rules through adapters.
 | --- | --- |
 | `GuildChest.Core` | Leases, revisions, replay receipts and transfer/completion state |
 | `Protocol` | V1 operation numbers, package headers, dimensions and timing constants |
-| `Host` | World persistence, access checks, conservation and final-chest spilling |
+| `Host` | World persistence, access checks, conservation and access-point removal |
 | `Client` | Sessions, staged transfers, acknowledgement and local application |
 | `GuildChestStorage` | Public transaction API for other mods |
 | `InventoryAccess` | Protected inventories and disposable upstream inventory scopes |
@@ -25,6 +25,12 @@ Required adapter members are resolved before any hooks are installed. Failed
 installation removes that adapter's hooks and logs its unavailable bindings.
 Inventory guards remain active. Wrapper lookups are cached by type; configuration
 values are read when used, so upstream setting changes still apply.
+
+Chest removal revokes the chest's lease and always retains the inventory and
+revision in the independent world-state record, including with zero access
+points. Registering a rebuilt chest restores access after removal or a world
+reload. New removals never create spill journals. Pending spills saved by older
+versions continue their existing recovery process on world load.
 
 Upstream transfer rules run inside `InventoryAccess.StagingScope`, which restores
 the original player and chest inventories on disposal. It also restores an

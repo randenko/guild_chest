@@ -33,16 +33,15 @@ public sealed class SharedStore
 {
     public const double LeaseSeconds = 30;
     private readonly HashSet<string> chests = new(StringComparer.Ordinal);
-    private readonly byte[] empty;
     private byte[] inventory;
     private long revision;
     private readonly Dictionary<string, byte[]> receipts = new(StringComparer.Ordinal);
     private readonly Queue<string> receiptOrder = new();
     public Lease? ActiveLease { get; private set; }
     public int ChestCount => chests.Count;
-    public SharedStore(byte[] emptyInventory, byte[] savedInventory, long savedRevision)
+    public SharedStore(byte[] savedInventory, long savedRevision)
     {
-        empty = (byte[])emptyInventory.Clone(); inventory = (byte[])savedInventory.Clone(); revision = savedRevision;
+        inventory = (byte[])savedInventory.Clone(); revision = savedRevision;
     }
     public StoreSnapshot Snapshot() => new(inventory, revision);
     public bool Register(string chest) => chests.Add(chest);
@@ -105,16 +104,11 @@ public sealed class SharedStore
         Expire(now); return ActiveLease?.Peer == peer && ActiveLease.Token == token;
     }
 
-    /// <summary>Called for actual world-object removal, never for scene unloading.</summary>
-    public bool Remove(string chest, out StoreSnapshot? spill)
+    /// <summary>Removes an access point and its lease, preserving shared contents even with no chests.</summary>
+    public bool Remove(string chest)
     {
-        spill = null;
         if (!chests.Remove(chest)) return false;
         if (ActiveLease?.Chest == chest) ActiveLease = null;
-        if (chests.Count == 0)
-        {
-            spill = Snapshot(); inventory = (byte[])empty.Clone(); revision++;
-        }
         return true;
     }
 }
