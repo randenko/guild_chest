@@ -105,6 +105,10 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
     }
     private IEnumerator Run()
     {
+        if (Environment.GetEnvironmentVariable("GUILDCHEST_SMOKE_RETENTION") == "1")
+        {
+            yield return RunRetention(); yield break;
+        }
         yield return new WaitForSeconds(2);
         if (!File.Exists(Marker))
         {
@@ -122,13 +126,7 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
                 CheckChestAppearance(prefab, firstChest);
                 UnityEngine.Object.Instantiate(prefab, new Vector3(-5000, 1000, -5000), Quaternion.identity);
                 Check(Store!.ChestCount == 2, "World creation hooks register both chests");
-                var inventory = new Inventory("fixture", null, 8, 4);
-                var ore = ObjectDB.instance.GetItemPrefab("Iron").GetComponent<ItemDrop>().m_itemData.Clone();
-                ore.m_dropPrefab = ObjectDB.instance.GetItemPrefab("Iron"); ore.m_stack = 12; ore.m_gridPos = new Vector2i(0, 0);
-                var weapon = ObjectDB.instance.GetItemPrefab("SwordIron").GetComponent<ItemDrop>().m_itemData.Clone();
-                weapon.m_dropPrefab = ObjectDB.instance.GetItemPrefab("SwordIron"); weapon.m_quality = 3; weapon.m_durability = 12.34f;
-                weapon.m_gridPos = new Vector2i(1, 0); weapon.m_crafterID = 12345; weapon.m_crafterName = "Fixture"; weapon.m_customData["fixture"] = "preserved";
-                inventory.GetAllItems().Add(ore); inventory.GetAllItems().Add(weapon);
+                var inventory = CreateFixtureInventory();
                 byte[] bytes = Encode(inventory); ValidateItems(Decode(bytes));
                 var chest = Objects.First(zdo => zdo.GetPrefab() == "GuildChest".GetStableHashCode());
                 var result = Store.Open(ZNet.GetUID(), chest.m_uid.ToString(), Time.unscaledTime, out var lease);
@@ -145,10 +143,12 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
         else
         {
             List<ZDO> chests;
+            StoreSnapshot snapshot;
             try
             {
                 Check(Store!.ChestCount == 2, "Both unloaded chests restored from world save");
-                ValidateItems(Decode(Store.Snapshot().Inventory));
+                snapshot = Store.Snapshot();
+                ValidateItems(Decode(snapshot.Inventory));
                 chests = Objects.Where(zdo => zdo.GetPrefab() == "GuildChest".GetStableHashCode()).ToList();
                 Check(chests.Count == 2, "Two saved world objects");
                 chests[0].SetOwner(ZNet.GetUID()); ZDOMan.instance.DestroyZDO(chests[0]);
@@ -160,33 +160,50 @@ public sealed partial class NativeSmokeHarness : BaseUnityPlugin
                 Check(Store!.ChestCount == 1, "First chest deletion acknowledged");
                 ValidateItems(Decode(Store.Snapshot().Inventory));
                 Check(!Objects.Any(zdo => zdo.GetString("gc_spill_id") != "" && zdo.GetPrefab() != "GuildChestWorldState".GetStableHashCode()), "No contents dropped before final removal");
+                Check(Store.Open(ZNet.GetUID(), chests[1].m_uid.ToString(), Time.unscaledTime, out _) == AccessResult.Accepted, "Final chest lease acquired");
                 chests[1].SetOwner(ZNet.GetUID()); ZDOMan.instance.DestroyZDO(chests[1]);
             }
             catch (Exception exception) { Fail(exception); yield break; }
             yield return new WaitForSeconds(3);
             try
             {
-                Check(Store!.ChestCount == 0, "Final chest deletion acknowledged");
-                Check(Decode(Store.Snapshot().Inventory).NrOfItems() == 0, "Shared store cleared");
-                var drops = Objects.Where(zdo => zdo.GetString("gc_spill_id") != "" && zdo.GetPrefab() != "GuildChestWorldState".GetStableHashCode()).ToList();
-                Check(drops.Count == 2, "Exactly two item stacks dropped");
-                var weapon = drops.Single(zdo => zdo.GetPrefab() == "SwordIron".GetStableHashCode());
-                var packet = new ZPackage(weapon.GetByteArray(ZDOVars.s_itemData));
-                int version = packet.ReadByte(); var (_, item) = ItemDrop.ItemData.Load(packet, (global::Version.Item)version);
-                Check(item.m_quality == 3 && item.m_customData["fixture"] == "preserved" && item.m_crafterID == 12345, "Dropped metadata preserved");
+                ValidateRetainedInventory(snapshot);
                 ZNet.instance.Save(true);
-                File.AppendAllText(Marker, "phase2: world reload, unloaded chest retention, final spill and metadata passed\n");
+                File.AppendAllText(Marker, "phase2: world reload, unloaded chest retention, final-chest retention and metadata passed\n");
                 Logger.LogInfo("NATIVE_SMOKE_PHASE2_PASSED");
             }
             catch (Exception exception) { Fail(exception); yield break; }
         }
         yield return new WaitForSeconds(2); Application.Quit();
     }
+    private static Inventory CreateFixtureInventory()
+    {
+        var inventory = new Inventory("fixture", null, 8, 4);
+        var ore = ObjectDB.instance.GetItemPrefab("Iron").GetComponent<ItemDrop>().m_itemData.Clone();
+        ore.m_dropPrefab = ObjectDB.instance.GetItemPrefab("Iron"); ore.m_stack = 12; ore.m_gridPos = new Vector2i(0, 0);
+        var weapon = ObjectDB.instance.GetItemPrefab("SwordIron").GetComponent<ItemDrop>().m_itemData.Clone();
+        weapon.m_dropPrefab = ObjectDB.instance.GetItemPrefab("SwordIron"); weapon.m_quality = 3; weapon.m_durability = 12.34f;
+        weapon.m_gridPos = new Vector2i(1, 0); weapon.m_crafterID = 12345; weapon.m_crafterName = "Fixture"; weapon.m_customData["fixture"] = "preserved";
+        inventory.GetAllItems().Add(ore); inventory.GetAllItems().Add(weapon);
+        return inventory;
+    }
+    private void ValidateRetainedInventory(StoreSnapshot snapshot)
+    {
+        Check(Store!.ChestCount == 0 && Store.ActiveLease == null, "Final removal revokes the active lease");
+        Check(snapshot.Inventory.SequenceEqual(Store.Snapshot().Inventory) && snapshot.Revision == Store.Snapshot().Revision,
+            "Final removal preserves inventory and revision");
+        ValidateItems(Decode(Store.Snapshot().Inventory));
+        var state = Objects.Single(zdo => zdo.GetPrefab() == "GuildChestWorldState".GetStableHashCode());
+        Check(snapshot.Inventory.SequenceEqual(state.GetByteArray("gc_inventory_v1")) && snapshot.Revision == state.GetLong("gc_revision"),
+            "Retained inventory and revision persisted in world state");
+        Check(state.GetByteArray("gc_pending_spill", Array.Empty<byte>()).Length == 0, "No spill journal created");
+        Check(!Objects.Any(zdo => zdo.GetString("gc_spill_id") != ""), "No shared items dropped");
+    }
     private static void ValidateItems(Inventory inventory)
     {
         Check(inventory.NrOfItems() == 2 && inventory.GetItemAt(0, 0).m_stack == 12, "Ore stack preserved");
         var weapon = inventory.GetItemAt(1, 0);
-        Check(weapon.m_quality == 3 && Math.Abs(weapon.m_durability - 12.34f) < 0.011 && weapon.m_crafterName == "Fixture" && weapon.m_customData["fixture"] == "preserved", "Weapon metadata preserved");
+        Check(weapon.m_quality == 3 && Math.Abs(weapon.m_durability - 12.34f) < 0.011 && weapon.m_crafterID == 12345 && weapon.m_crafterName == "Fixture" && weapon.m_customData["fixture"] == "preserved", "Weapon metadata preserved");
     }
     private IEnumerator RunTransport()
     {

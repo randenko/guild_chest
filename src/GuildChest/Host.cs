@@ -12,7 +12,7 @@ internal static class Host
 {
     private const string ItemsKey = "gc_inventory_v1";
     private const string RevisionKey = "gc_revision";
-    private const string SpillKey = "gc_pending_spill";
+    private const string LegacySpillKey = "gc_pending_spill";
     internal static SharedStore? Store;
     private static ZDO? state;
     private static ZDOMan? manager;
@@ -36,7 +36,7 @@ internal static class Host
         int schema = state.GetInt("gc_schema", 1);
         if (schema != 1) throw new InvalidOperationException($"Unsupported Guild Chest save schema {schema}.");
         var empty = InventoryCodec.Save(InventoryCodec.Empty());
-        Store = new SharedStore(empty, state.GetByteArray(ItemsKey, empty), state.GetLong(RevisionKey));
+        Store = new SharedStore(state.GetByteArray(ItemsKey, empty), state.GetLong(RevisionKey));
         wardRadii.Clear(); wards.Clear();
         var prefabs = AccessTools.FieldRefAccess<ZNetScene, Dictionary<int, GameObject>>("m_namedPrefabs")(ZNetScene.instance);
         foreach (var pair in prefabs)
@@ -45,7 +45,7 @@ internal static class Host
             if (area) wardRadii[pair.Key] = area.m_radius;
         }
         foreach (var zdo in Objects) Register(zdo);
-        Persist(); ResumeSpill();
+        Persist(); ResumeLegacySpill();
         Plugin.LogInfo($"Guild Chest authority ready: {Store.ChestCount} chests; Valheim {(global::Version.GetVersionString())}.");
     }
 
@@ -66,19 +66,14 @@ internal static class Host
         if (!IsServer || Store == null || state == null) return;
         wards.Remove(zdo.m_uid);
         if (zdo.GetPrefab() != Plugin.ChestHash) return;
-        if (!Store.Remove(zdo.m_uid.ToString(), out var spill)) return;
-        if (spill != null)
-        {
-            state.Set(SpillKey, spill.Inventory); state.Set("gc_spill_position", zdo.GetPosition());
-            state.Set("gc_spill_id", Guid.NewGuid().ToString("N")); state.Set("gc_spill_done", 0L);
-        }
+        if (!Store.Remove(zdo.m_uid.ToString())) return;
         Persist();
-        if (spill != null) ResumeSpill();
     }
-    private static void ResumeSpill()
+    // Finish journals written by earlier versions; new chest removals never create spills.
+    private static void ResumeLegacySpill()
     {
         if (state == null) return;
-        byte[] bytes = state.GetByteArray(SpillKey);
+        byte[] bytes = state.GetByteArray(LegacySpillKey);
         if (bytes == null || bytes.Length == 0) return;
         try
         {
@@ -100,7 +95,7 @@ internal static class Host
                 }
                 completed |= bit; state.Set("gc_spill_done", completed);
             }
-            state.Set(SpillKey, Array.Empty<byte>());
+            state.Set(LegacySpillKey, Array.Empty<byte>());
         }
         catch (Exception exception) { Plugin.Error(exception); /* Retain pending contents for recovery. */ }
     }
@@ -186,9 +181,9 @@ internal static class Host
                 }
                 else if (operation == Operation.Open || operation == Operation.OpenAutomation)
                 {
-                    if (state.GetByteArray(SpillKey, Array.Empty<byte>()).Length > 0)
+                    if (state.GetByteArray(LegacySpillKey, Array.Empty<byte>()).Length > 0)
                     {
-                        result = AccessResult.RecoveryPending; reason = "Stored items are awaiting recovery from the last destroyed chest. Check the server log.";
+                        result = AccessResult.RecoveryPending; reason = "Items from an older version are awaiting recovery. Check the server log.";
                     }
                     else
                     {

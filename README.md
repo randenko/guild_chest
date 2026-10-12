@@ -29,7 +29,9 @@ client and the host, with matching Guild Chest versions.
   the ground. Additional guild chests add access points, not capacity.
 - Destroying a chest refunds its construction materials normally. If another
   guild chest exists anywhere in the world, contents remain shared. Destroying
-  the **last** chest drops the shared contents at its location and clears storage.
+  the **last** chest keeps all shared items in the host/server's world save.
+  Rebuild any guild chest in that world to access them again, including after
+  saving and restarting with no chests. Shared contents never drop on destruction.
 - Each world has its own inventory. Shared contents are stored in the world
   save, rather than a player character or a separate database.
 

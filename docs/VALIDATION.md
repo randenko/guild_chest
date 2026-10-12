@@ -5,22 +5,23 @@ app 896660 on 2026-10-05. Exact Steam build ID and reference hashes are recorded
 locally in `.local/references.json`. A successful compile checks compatibility
 with this build's assemblies; future 1.x updates need verification.
 
-## Completed checks (through 2026-10-11)
+## Completed checks (through 2026-10-12)
 
 - The dev container image builds successfully and runs the solution as the
   non-root `vscode` user with .NET SDK 10.0.401.
 - Full solution and Release plugin builds succeed without warnings or errors.
-- All **13** core synchronization/lifecycle tests and **4** package-consistency
-  tests pass.
+- All **15** core synchronization/lifecycle tests and **38** Python packaging,
+  release-validation and build-orchestration tests pass.
 - The reference setup succeeds through anonymous SteamCMD; a repeated setup
   skips installed downloads. Package metadata and the 256 × 256 PNG are valid,
   and the release ZIP contains only the intended package files.
 - A native headless Valheim 1.0.16 fixture verifies prefab registration, chest
   recipe, dimensions, serialization of 12 iron and a damaged quality-3 iron sword
   with crafter/custom data, and saving the inventory with two distant chests.
-- Restarting that fixture restores both unloaded chest records and their shared
-  inventory. Removing the first preserves contents; removing the last emits
-  exactly two item stacks, preserves the sword metadata, and clears the store.
+- In earlier versions, restarting that fixture restores both unloaded chest
+  records and their shared inventory. Removing the first preserves contents;
+  removing the last emits exactly two item stacks, preserves the sword metadata,
+  and clears the store.
 - A second native fixture drives a synthetic host player through the real request
   and response RPCs and vanilla inventory handlers. Opening, quick deposit, Take
   All, partial-stack drag deposit/withdrawal, Stack All, and releasing the lease
@@ -141,6 +142,14 @@ with this build's assemblies; future 1.x updates need verification.
   fixture builds have no warnings or errors. Client lighting and visible clipping
   remain manual checks below.
 
+Standard final-chest retention passes both runs of the native headless fixture
+on Valheim 1.0.16. Destroying the only chest revokes its active lease without
+changing inventory or revision, creates no spill journal or item drops, and saves
+the contents with no access points. Restarting that world preserves the iron
+stack and sword metadata; a rebuilt chest grants access. Destroying the rebuilt
+chest retains the items again. The Release plugin and native fixture compile
+without warnings or errors. Live client behavior remains a manual check below.
+
 The scripted host fixture disables dedicated-scene culling, structural wear on
 its floating chest, the headless scene's GUI Update loop, and Game.Update's
 player-spawn lifecycle. It binds the native
@@ -182,6 +191,12 @@ sample contents; the second run of that world verifies persistence and final
 destruction. It exits the server when finished and writes the marker or a
 `.failed` file.
 
+For final-chest retention, use a fresh disposable world and marker, and also set
+`GUILDCHEST_SMOKE_RETENTION=1` for both runs. The first run destroys the only chest
+while its lease is active, verifies no spill or inventory changes, and saves the
+world with no chests. The second restores the items, rebuilds a chest and opens
+it, then destroys it and verifies retention again with preserved metadata.
+
 For the scripted host-transfer checks, use another fresh disposable world and
 marker, and also set `GUILDCHEST_SMOKE_TRANSPORT=1`. Never install this test
 plugin in a normal game or world: it creates/deletes fixture objects and exits
@@ -216,7 +231,8 @@ produces a Harmony warning; no partial hooks may remain after that rejection.
 - Restore and compile the full solution inside the container.
 - Run the synchronization tests: global exclusivity, lease expiry/renewal,
   unauthorized mutations, stale revisions, retry ordering/idempotency, duplicate
-  registrations/removals, unloaded-chest membership, final-chest spill, and
+  registrations/removals, unloaded-chest membership, retained inventory with no
+  chests, rebuilding after save/reload, and
   separate/restored world stores.
 - Package Release and inspect its ZIP for both plugin DLLs, README, icon,
   license, and manifest. Game and dependency DLLs must be absent.
@@ -248,8 +264,11 @@ rendering, controller input, or a multiplayer player's inventory.
 - [ ] Ward owner/permitted player can open a protected chest; another player
   cannot. Test overlapping wards and a dedicated server with unloaded wards.
 - [ ] Destroy a chest while another is unloaded: no shared-content drops.
-  Destroy the final chest: resources and shared contents drop once, with metadata.
-  Rebuild a chest: the shared inventory is empty.
+  Destroy the final chest while it is open: only construction resources drop,
+  and the old session cannot move items. Rebuild a chest and retrieve all shared
+  contents with their metadata intact. Repeat with a save/restart while there
+  are no chests, and with repeated destruction/rebuilding. Inventory retention
+  applies to every player without configuration.
 - [ ] Save/restart with distant chests and contents; repeat in a second world
   and with the same character to verify world isolation.
 - [ ] Missing/mismatched Guild Chest plugin prevents multiplayer entry.
@@ -267,9 +286,11 @@ rendering, controller input, or a multiplayer player's inventory.
 
 ## Recovery behavior
 
-If final-chest spilling fails, the remaining items and progress stay in the world
-state. The host retries on world load; already recorded drops are not emitted
-again. Missing item prefabs or unsupported serialization block access while
+Pending spills saved by older versions retain their existing recovery process:
+remaining items and progress stay in the world state, and the host retries on
+world load without emitting already recorded drops again. New chest destruction
+always preserves shared contents and never creates a spill journal.
+Missing item prefabs or unsupported serialization block access while
 preserving stored bytes. Restore the appropriate item mod/version before retrying.
 Unresolved prefabs in the player's inventory can remain there during unrelated
 transfers. They cannot enter shared storage until the server has their prefab.

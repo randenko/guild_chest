@@ -7,7 +7,7 @@ public class SharedStoreTests
 {
     private static SharedStore Create()
     {
-        var store = new SharedStore(new byte[] { 0 }, new byte[] { 42 }, 7);
+        var store = new SharedStore(new byte[] { 42 }, 7);
         store.Register("near"); store.Register("unloaded"); return store;
     }
 
@@ -43,24 +43,63 @@ public class SharedStoreTests
         Assert.Equal(AccessResult.StaleRevision, store.Commit(1, lease.Token, 7, 2, new byte[] { 8 }, 3));
     }
 
-    [Fact] public void UnloadedChestPreventsSpillAndFinalRemovalSpillsOnlyOnce()
+    [Fact] public void RemovingAllChestsAndDuplicateRemovalPreserveInventoryAndRevision()
     {
         var store = Create();
         Assert.False(store.Register("near"));
-        Assert.True(store.Remove("near", out var none)); Assert.Null(none);
+        Assert.True(store.Remove("near"));
+        Assert.Equal(1, store.ChestCount);
         Assert.Equal(new byte[] { 42 }, store.Snapshot().Inventory);
-        Assert.True(store.Remove("unloaded", out var spill));
-        Assert.Equal(new byte[] { 42 }, spill!.Inventory);
-        Assert.Equal(new byte[] { 0 }, store.Snapshot().Inventory);
-        Assert.False(store.Remove("unloaded", out var duplicate)); Assert.Null(duplicate);
+        Assert.True(store.Remove("unloaded"));
+        Assert.Equal(0, store.ChestCount);
+        Assert.False(store.Remove("unloaded"));
+        Assert.Equal(new byte[] { 42 }, store.Snapshot().Inventory);
+        Assert.Equal(7, store.Snapshot().Revision);
     }
 
     [Fact] public void RemovingOccupiedChestRevokesLeaseWithoutEmptyingOtherChest()
     {
         var store = Create(); store.Open(1, "near", 0, out var lease);
-        store.Remove("near", out _);
+        store.Remove("near");
         Assert.Equal(AccessResult.InvalidSession, store.Commit(1, lease!.Token, 7, 1, new byte[] { 9 }, 1));
         Assert.Equal(AccessResult.Accepted, store.Open(2, "unloaded", 2, out _));
+    }
+
+    [Fact] public void FinalRemovalKeepsInventoryAndRebuiltChestRestoresAccess()
+    {
+        var store = Create();
+        Assert.True(store.Remove("near"));
+        Assert.Equal(AccessResult.Accepted, store.Open(1, "unloaded", 0, out var lease));
+        Assert.True(store.Remove("unloaded"));
+        Assert.Equal(0, store.ChestCount);
+        Assert.Null(store.ActiveLease);
+        Assert.Equal(new byte[] { 42 }, store.Snapshot().Inventory);
+        Assert.Equal(7, store.Snapshot().Revision);
+        Assert.Equal(AccessResult.InvalidSession, store.Commit(1, lease!.Token, 7, 1, new byte[] { 9 }, 1));
+        Assert.Equal(AccessResult.UnknownChest, store.Open(2, "unloaded", 1, out _));
+        Assert.False(store.Remove("unloaded"));
+        Assert.True(store.Register("rebuilt"));
+        Assert.Equal(AccessResult.Accepted, store.Open(2, "rebuilt", 2, out var rebuiltLease));
+        Assert.Equal(new byte[] { 42 }, store.Snapshot().Inventory);
+        Assert.Equal(AccessResult.Accepted, store.Commit(2, rebuiltLease!.Token, 7, 1, new byte[] { 9 }, 3));
+    }
+
+    [Fact] public void RetainedInventorySurvivesReloadWithoutChestsAndRebuiltChestCanTransfer()
+    {
+        var store = Create();
+        store.Remove("near");
+        store.Remove("unloaded");
+        var saved = store.Snapshot();
+        var restored = new SharedStore(saved.Inventory, saved.Revision);
+        Assert.Equal(0, restored.ChestCount);
+        Assert.Equal(new byte[] { 42 }, restored.Snapshot().Inventory);
+        Assert.Equal(7, restored.Snapshot().Revision);
+        restored.Register("rebuilt");
+        Assert.Equal(AccessResult.Accepted, restored.Open(1, "rebuilt", 0, out var lease));
+        Assert.Equal(AccessResult.Accepted, restored.Commit(1, lease!.Token, saved.Revision, 1, new byte[] { 11 }, 1));
+        Assert.True(restored.Remove("rebuilt"));
+        Assert.Equal(new byte[] { 11 }, restored.Snapshot().Inventory);
+        Assert.Equal(8, restored.Snapshot().Revision);
     }
 
     [Fact] public void SavedInventoryRoundTripsAndWorldStoresAreIsolated()
@@ -68,7 +107,7 @@ public class SharedStoreTests
         var first = Create(); first.Open(1, "near", 0, out var lease);
         first.Commit(1, lease!.Token, 7, 1, new byte[] { 11 }, 1);
         var snapshot = first.Snapshot();
-        var restored = new SharedStore(new byte[] { 0 }, snapshot.Inventory, snapshot.Revision);
+        var restored = new SharedStore(snapshot.Inventory, snapshot.Revision);
         Assert.Equal(new byte[] { 11 }, restored.Snapshot().Inventory);
         Assert.Null(restored.ActiveLease);
         Assert.Equal(new byte[] { 42 }, Create().Snapshot().Inventory);
@@ -89,9 +128,9 @@ public class SharedStoreTests
     {
         var store = Create(); store.Open(1, "near", 0, out var lease);
         store.Commit(1, lease!.Token, 7, 1, new byte[] { 9 }, 1);
-        store.Remove("near", out _); store.Remove("unloaded", out _);
+        store.Remove("near"); store.Remove("unloaded");
         Assert.Equal(AccessResult.Accepted, store.Commit(1, lease.Token, 7, 1, new byte[] { 9 }, 100));
-        Assert.Equal(new byte[] { 0 }, store.Snapshot().Inventory);
-        Assert.Equal(9, store.Snapshot().Revision);
+        Assert.Equal(new byte[] { 9 }, store.Snapshot().Inventory);
+        Assert.Equal(8, store.Snapshot().Revision);
     }
 }
