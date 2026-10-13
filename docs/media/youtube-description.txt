@@ -1,0 +1,40 @@
+One world. One shared stash.
+
+Guild Chest adds a gold-decorated chest that connects to one shared 32-slot inventory across your Valheim world. Build access points at your main base, mining camps, and distant outposts to reach the same supplies wherever you adventure.
+
+FEATURES
+• One shared inventory across every Guild Chest in the world.
+• 32 slots, with metals accepted.
+• Additional chests add access points, not capacity.
+• One player can access the inventory at a time.
+• Normal ward permissions apply.
+• Contents remain saved if the last chest is destroyed. Rebuild a Guild Chest in the same world to access them again.
+
+BUILD RECIPE
+20 fine wood, 10 iron, 2 surtling cores, and 250 coins. A nearby workbench is required.
+
+INSTALLATION
+Install Guild Chest, BepInExPack Valheim, and Jötunn on every client and the host/server. Use matching Guild Chest versions.
+
+Downloads and release notes:
+https://github.com/randenko/valheim-guildchest/releases/latest
+
+Source code and installation information:
+https://github.com/randenko/valheim-guildchest
+
+Bug reports and feature requests are tracked exclusively on GitHub:
+https://github.com/randenko/valheim-guildchest/issues
+
+Required dependencies:
+BepInExPack Valheim:
+https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/
+
+Jötunn:
+https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/
+
+Guild Chest is free and open source. Enjoying the mod? Buy me a coffee as an optional thank-you:
+https://ko-fi.com/randenko
+
+Back up your world before removing the mod. See the repository for compatibility and removal guidance.
+
+#Valheim #ValheimMods #GuildChest

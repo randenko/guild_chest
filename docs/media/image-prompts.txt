@@ -1,0 +1,13 @@
+Built-in imagegen; one edit per original. All outputs are separate presentation copies.
+
+01_cover.jpg → presentation/01_cover.png
+Use case: precise-object-edit. Edit target: the supplied real Valheim gameplay screenshot. Produce a presentation copy using ONLY a tighter rectangular crop, keeping the gold Guild Chest, both coin piles, both lit wall torches and green banner. Crop away much of the empty floor and outer wall edges; chest should be prominent, fully visible, with original aspect/proportions. Preserve all screenshot pixels and visual details faithfully; no redrawing, no invented decoration, no added text or watermarks. Output a landscape image.
+
+02_inventory_view.jpg → presentation/02_inventory_view.png
+Use case: precise-object-edit. Edit target: real Valheim gameplay screenshot. Produce a separate presentation screenshot. Remove only the tiny performance overlays at the very top left '143 FPS' and at the very top right 'FPS N/A | GPU 12% | CPU 2% | LAT N/A', preferably by cropping a narrow strip from the top without cutting ANY of either inventory grid. Preserve the complete Guild Chest 8-column by 4-row grid, every item, count, label, and slot, buttons and player inventory exactly as photographed. Keep the rest of the gameplay scene unchanged. No invented or redrawn UI, no added text, no sharpening/restyling.
+
+03_hammer_menu_with_recipe.jpg → presentation/03_hammer_menu_with_recipe.png
+Use case: precise-object-edit. Input is a real Valheim screenshot and is the edit target. Create a presentation copy by cropping only empty margins around the hammer-menu panel and its selected Guild Chest recipe below. Include the entire hammer-menu panel and the full Guild Chest recipe panel with fine wood 20, iron 10, surtling core 2, coins 250, and workbench requirement, all legible exactly as in the input. Keep the gold chest icon, every grid icon and original text and UI positions unchanged, no redraws or invented elements. Do not remove or trim any recipe information. No text additions or stylistic changes.
+
+04_build_guild_chest_with_recipe.jpg → presentation/04_build_guild_chest_with_recipe.png
+Use case: precise-object-edit. Edit target: supplied real Valheim gameplay screenshot. Make a separate presentation copy with a tighter crop that includes the gold Guild Chest placement preview, the nearby portal and workbench, player, and the COMPLETE recipe panel at the bottom, with Finewood 20, Iron 10, Surtling Core 2, Coins 250, Workbench exactly as shown. Crop some empty top roof and outer margins only. Preserve every original object, UI position, label and cost faithfully, and retain all recipe text readable. No added text, no redraws, no changes to gameplay.

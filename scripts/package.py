@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import zipfile
+from check_release import check_release_notes
+from package_format import release_links, validate_icon, validate_manifest
 
 ZIP_TIMESTAMP_START = datetime(1980, 1, 1)
 ZIP_TIMESTAMP_SLOTS = (datetime(2108, 1, 1) - ZIP_TIMESTAMP_START) // timedelta(seconds=2)
@@ -49,11 +51,21 @@ for name in ('GuildChest.dll', 'GuildChest.Core.dll'):
     actual = hashlib.sha256((binary_dir / name).read_bytes()).hexdigest()
     if actual.upper() != (hashes.get(name) or '').upper():
         raise SystemExit(f'Release binary changed since its build: {name}. Rebuild before packaging.')
+try:
+    validate_manifest(manifest)
+    validate_icon((ROOT / 'icon.png').read_bytes())
+    check_release_notes(f'v{manifest["version_number"]}', ROOT)
+except ValueError as error:
+    raise SystemExit(str(error)) from error
+contents_by_name = {name: path.read_bytes() for name, path in files.items()}
+version = manifest['version_number']
+contents_by_name['README.md'] = release_links((ROOT / 'README.md').read_text(encoding='utf-8'), version).encode('utf-8')
+notes = ROOT / 'docs/releases' / f'v{version}.md'
+contents_by_name['CHANGELOG.md'] = release_links(notes.read_text(encoding='utf-8'), version, 'docs/releases').encode('utf-8')
 destination = ROOT / 'artifacts' / f'GuildChest-{manifest["version_number"]}.zip'
 destination.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(destination, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
-    for name, path in sorted(files.items()):
-        contents = path.read_bytes()
+    for name, contents in sorted(contents_by_name.items()):
         info = zipfile.ZipInfo(name, archive_timestamp(contents))
         info.compress_type = zipfile.ZIP_DEFLATED
         info.external_attr = 0o100644 << 16
