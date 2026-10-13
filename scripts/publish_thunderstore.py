@@ -40,6 +40,13 @@ class Http:
     def get(self, url, *, optional=False, binary=False):
         if urlsplit(url).scheme != 'https':
             raise ValueError('Downloads must use HTTPS.')
+        # Thunderstore's CDN can retain a pre-publication 404 after an upload
+        # succeeds. Each metadata check must reach a fresh cache key so retries
+        # see the existing version before considering another submission.
+        parts = urlsplit(url)
+        if parts.netloc == 'thunderstore.io' and parts.path.startswith('/api/experimental/package/'):
+            separator = '&' if parts.query else '?'
+            url += f'{separator}guildchest_refresh={time.time_ns()}'
         headers = {'User-Agent': 'GuildChest-release',
                    'Accept': 'application/octet-stream' if binary else 'application/json'}
         if urlsplit(url).netloc == 'api.github.com' and self.token:

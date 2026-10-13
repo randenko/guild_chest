@@ -52,7 +52,7 @@ def main():
             with tarfile.open(archive) as source:
                 source.extractall(steam, filter='data')
         subprocess.run([str(steam / 'steamcmd.sh'), '+force_install_dir', str(server), '+login', 'anonymous',
-                        '+app_update', '896660', 'validate', '+quit'], check=True)
+                        '+app_update', '896660', '-beta', 'public', 'validate', '+quit'], check=True)
         if not (managed / 'assembly_valheim.dll').is_file():
             raise SystemExit('SteamCMD did not install the expected Managed folder. Check its output and retry setup.')
     for label, (team, name, version, wanted) in PACKAGES.items():

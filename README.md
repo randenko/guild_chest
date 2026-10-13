@@ -66,7 +66,8 @@ Use a compatible mod manager, or install the dependencies using their manual
 instructions and extract the release ZIP's `BepInEx` folder into each Valheim
 installation. Both `GuildChest.dll` and `GuildChest.Core.dll` belong together in
 `BepInEx/plugins/GuildChest`. Download reviewed builds from
-[GitHub Releases](https://github.com/randenko/valheim-guildchest/releases/latest).
+[Thunderstore](https://thunderstore.io/c/valheim/p/Paper_Street_Software/GuildChest/)
+or [GitHub Releases](https://github.com/randenko/valheim-guildchest/releases/latest).
 Keep item mods installed on the host and all clients when storing their items.
 
 Guild Chest supports solo, player-hosted, and dedicated-server use on PCs with

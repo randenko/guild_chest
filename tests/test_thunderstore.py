@@ -299,6 +299,17 @@ sys.exit(int(os.environ.get('GUILDCHEST_FAKE_CLI_EXIT', '0')))
 
 
 class HttpTests(unittest.TestCase):
+    def test_publication_metadata_checks_do_not_reuse_cached_absence(self):
+        http = Http()
+        url = 'https://thunderstore.io/api/experimental/package/Paper_Street_Software/GuildChest/1.1.0/'
+        with patch.object(http.opener, 'open') as open_url, patch('publish_thunderstore.time.time_ns', side_effect=(123, 456)):
+            open_url.return_value.__enter__.return_value.read.return_value = b'{}'
+            http.json(url, optional=True)
+            http.json(url, optional=True)
+            first, second = [call.args[0].full_url for call in open_url.call_args_list]
+            self.assertEqual(first, url + '?guildchest_refresh=123')
+            self.assertEqual(second, url + '?guildchest_refresh=456')
+
     def test_transport_uses_get_and_authenticates_only_github(self):
         http = Http('private-fixture-token')
         with patch.object(http.opener, 'open') as open_url:

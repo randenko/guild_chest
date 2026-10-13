@@ -1,9 +1,41 @@
 # Validation
 
-Reference game version: **Valheim 1.0.16**, Steam build **25527701**, obtained through anonymous SteamCMD
-app 896660 on 2026-10-05. Exact Steam build ID and reference hashes are recorded
-locally in `.local/references.json`. A successful compile checks compatibility
-with this build's assemblies; future 1.x updates need verification.
+Recorded native/gameplay reference: **Valheim 1.0.16**, Steam build **25527701**,
+obtained through anonymous SteamCMD app 896660 on 2026-10-05. Current setup
+provenance is recorded locally in `.local/references.json`; the publication record
+below identifies the newer release build. A successful compile checks assembly
+compatibility; runtime behavior on newer builds needs separate verification.
+
+## 1.1.0 publication (2026-10-13)
+
+- Release preparation merged through PR #21 after both CI checks passed. Tag
+  v1.1.0 points to 586488e2a61af23ded27d7943798f43c294ab836.
+- The GitHub tag workflow failed three times while SteamCMD reported missing
+  configuration. A clean download with the public branch selected explicitly
+  succeeded, and the complete local NUKE Release target then passed against
+  fresh Steam build 25730807 with 15 C# and 62 Python tests and no compiler
+  warnings or errors. Previous references were preserved locally. This records
+  compilation against the newer build; it does not claim new live or native
+  fixture checks for that build.
+- GitHub and Thunderstore both publish version 1.1.0. The downloadable ZIPs are
+  identical, with SHA-256
+  `133b8fe196e45c49fc0d984d07b9f948a070ca25557fe4b7eab8baa70bf7dbf3`.
+- The Thunderstore upload succeeded, verifying token authorization. Its first
+  verification step saw a CDN-cached pre-publication 404. Metadata checks now use
+  fresh query keys so a retry can detect the existing archive and skip uploading.
+- The follow-up checks pass 15 C# and 63 Python tests, including cached-404
+  regression coverage. Reference setup now selects Steam's public branch
+  explicitly when downloading or updating game references.
+- Official tcli 0.2.4 installed the published package into a new isolated
+  `GuildChest-1.1.0-launch` profile, resolving BepInExPack Valheim 5.4.2351 and
+  Jötunn 2.30.2 automatically. Both installed Guild Chest DLLs match the release
+  archive bytes and have assembly/file version 1.1.0.0. This is a profile
+  installation check; no gameplay was launched from that profile.
+- The live listing renders the player README, all four screenshots with alt text,
+  recipe, configuration, Ko-fi support, and video links. All four release-specific
+  image downloads match the reviewed media. The saved YouTube description now
+  includes the verified listing URL; the live description needs that URL added
+  manually.
 
 ## 1.1.0 launch preparation (2026-10-13)
 

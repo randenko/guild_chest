@@ -27,14 +27,21 @@ the [YouTube description](media/youtube-description.txt) before release.
    compare the downloaded archive checksum. Then add the **verified** listing URL
    to both the saved description and the live YouTube description manually.
 
-The user has confirmed live gameplay and the Ko-fi link and has applied the
-supplied YouTube description. Thunderstore publication and the checks of the
-published package remain pending review and publication.
+Guild Chest 1.1.0 is published on
+[GitHub](https://github.com/randenko/valheim-guildchest/releases/tag/v1.1.0) and
+[Thunderstore](https://thunderstore.io/c/valheim/p/Paper_Street_Software/GuildChest/).
+The published archives match byte for byte. A clean official tcli profile installs
+Guild Chest 1.1.0, BepInExPack 5.4.2351, and Jötunn 2.30.2; the listing renders
+all four screenshots and the player README. See [validation](VALIDATION.md).
+
+The user has confirmed live gameplay and the Ko-fi link and applied the initial
+YouTube description. The saved description now includes the verified Thunderstore
+URL; adding that URL to the live video description remains a manual step.
 
 Configuration uses repository variable `THUNDERSTORE_NAMESPACE` (launch value:
 `Paper_Street_Software`) and secret `THUNDERSTORE_API_TOKEN`, supplied to tcli as
-`TCLI_AUTH_TOKEN`. Presence was verified during planning; token upload authorization
-is established only by a real successful upload. The GitHub token has read-only
+`TCLI_AUTH_TOKEN`. Presence was verified during planning and upload authorization
+was verified by the successful 1.1.0 upload. The GitHub token has read-only
 repository permissions in this workflow.
 
 ## Read-only preflight and retries
@@ -60,8 +67,9 @@ Before uploading, the helper looks up the exact Thunderstore version and hashes
 its downloadable ZIP. Identical bytes succeed without another upload; differing
 bytes fail and require a new version. API errors other than 404 fail rather than
 being treated as an absent version. After invoking tcli, it polls for the published
-version and verifies its bytes even when tcli exits with an error. An interrupted
-or unconfirmed attempt remains retryable: the next run checks existing bytes
+version and verifies its bytes even when tcli exits with an error. Metadata requests
+use a fresh query key to avoid a cached pre-publication 404 from Thunderstore's CDN.
+An interrupted or unconfirmed attempt remains retryable: the next run checks existing bytes
 again before submitting. If publication succeeded but is not visible yet, wait
 for API visibility before retrying. Failed checks leave the GitHub release intact.
 

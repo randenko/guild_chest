@@ -121,6 +121,8 @@ class SetupTests(unittest.TestCase):
         steam.assert_called_once()
         self.assertIn('+app_update', steam.call_args.args[0])
         self.assertIn('896660', steam.call_args.args[0])
+        arguments = steam.call_args.args[0]
+        self.assertEqual(arguments[arguments.index('-beta') + 1], 'public')
         self.assertEqual(download.call_count, 2)
 
 
