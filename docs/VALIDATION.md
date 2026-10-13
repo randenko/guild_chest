@@ -5,6 +5,44 @@ app 896660 on 2026-10-05. Exact Steam build ID and reference hashes are recorded
 locally in `.local/references.json`. A successful compile checks compatibility
 with this build's assemblies; future 1.x updates need verification.
 
+## 1.1.0 launch preparation (2026-10-13)
+
+- The normal NUKE Test target passes 15 C# tests and 62 Python tests, including
+  package listing/changelog, release links, icon/manifest validation, receipt
+  and DLL-update regressions, reproducibility, and mocked publisher scenarios.
+- Release/package/checksum builds succeed without compiler warnings or errors
+  using the existing downloaded references. Both DLLs have assembly and file
+  version 1.1.0.0; the generated plugin version, manifest, notes, and ZIP use 1.1.0.
+- The package passes ZIP integrity, allowlist, icon, version and SHA-256 checks.
+  The changelog comes from the current notes, document and media links are pinned
+  to v1.1.0, and screenshots remain outside the ZIP. Repackaging identical inputs
+  produces identical archive bytes.
+- actionlint 1.7.12 accepts the release and Thunderstore workflows. The official
+  tcli 0.2.4 binary parses the generated TOML in a separate local build check;
+  this check does not publish or replace the installable Guild Chest archive.
+- Read-only Thunderstore API checks confirm both pinned dependency versions and
+  the three selected Valheim categories. Publisher tests cover unpublished and
+  invalid releases, ancestry/version/checksum conflicts, absent configuration,
+  dependencies/categories, matching/conflicting existing versions, and retries.
+  Preflight never invokes the upload CLI. Upload authorization remains untested.
+- Presentation images were inspected for the complete chest grid and readable
+  20/10/2/250 recipe costs; all four staged originals retain their original bytes.
+  A GitHub-rendered Markdown preview with embedded images is generated locally
+  under `.local/launch-review/`. The saved YouTube description matches the review
+  plan; the user confirms applying it to YouTube.
+- Repository, issues, latest release, dependency pages, and video links return
+  HTTP 200. Ko-fi returns HTTP 403 to automated requests; the user has verified
+  the link manually.
+  New release-specific URLs become available when v1.1.0 is committed and tagged.
+- The user confirms live gameplay verification for launch. This confirmation
+  does not include individual checklist results, game modes, build/dependency
+  versions, or logs; the detailed scenarios below remain available as a reference.
+
+Gameplay, Ko-fi, and the initial YouTube description are user-confirmed. After
+publication, verify clean mod-manager installation, dependency resolution, both
+DLL versions, listing rendering, and the downloadable ZIP checksum. Then add
+the verified Thunderstore listing URL to the saved and live YouTube descriptions.
+
 ## Completed checks (through 2026-10-12)
 
 - The dev container image builds successfully and runs the solution as the
@@ -268,6 +306,9 @@ produces a Harmony warning; no partial hooks may remain after that rejection.
   license, and manifest. Game and dependency DLLs must be absent.
 
 ## Gameplay checklist
+
+The user has confirmed live gameplay for the 1.1.0 launch. The scenarios below
+are retained for reference; checkboxes reflect individually documented results.
 
 Record mode, game build, dependencies, result, and relevant logs for each run.
 These checks require a running client; automated core tests cannot verify UI,

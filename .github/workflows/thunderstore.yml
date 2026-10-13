@@ -1,0 +1,56 @@
+name: Thunderstore
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing published stable release tag (vX.Y.Z)
+        required: true
+        type: string
+      preflight_only:
+        description: Validate without uploading
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+# Serialize all versions; interruption does not cancel an earlier upload.
+concurrency:
+  group: thunderstore-guildchest
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.draft && !github.event.release.prerelease)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag || github.event.release.tag_name }}
+      THUNDERSTORE_NAMESPACE: ${{ vars.THUNDERSTORE_NAMESPACE }}
+      TCLI_AUTH_TOKEN: ${{ secrets.THUNDERSTORE_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Read-only preflight
+        run: python3 scripts/publish_thunderstore.py "$RELEASE_TAG" --preflight
+      - name: Install official tcli 0.2.4
+        if: github.event_name == 'release' || !inputs.preflight_only
+        run: |
+          curl --fail --silent --show-error --location --retry 3 https://github.com/thunderstore-io/thunderstore-cli/releases/download/0.2.4/tcli-0.2.4-linux-x64.tar.gz --output "$RUNNER_TEMP/tcli.tar.gz"
+          printf '%s  %s\n' bd7df48875e0c819a23a3bfaccf493c8cdf45288d9445558157a51126d0eab32 "$RUNNER_TEMP/tcli.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/tcli.tar.gz" -C "$RUNNER_TEMP"
+          # tcli 0.2.4 returns 1 for --version; the asset hash above pins it.
+      - name: Upload reviewed release archive
+        if: github.event_name == 'release' || !inputs.preflight_only
+        run: python3 scripts/publish_thunderstore.py "$RELEASE_TAG" --upload --cli "$RUNNER_TEMP/tcli-0.2.4-linux-x64/tcli"

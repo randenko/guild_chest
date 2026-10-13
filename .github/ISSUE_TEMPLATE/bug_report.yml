@@ -1,0 +1,41 @@
+name: Bug report
+description: Report a Guild Chest problem. Reports are tracked exclusively through GitHub Issues.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "Bug reports and feature requests are tracked exclusively through GitHub Issues. Remove credentials or private server addresses from logs."
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Guild Chest, Valheim/build, BepInEx, and Jötunn versions on the client and host.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Game mode
+      options:
+        - Solo
+        - Player-hosted multiplayer
+        - Dedicated server
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps, expected result, and actual result
+      description: Include chest locations, actions, permissions, and whether the problem persists after restarting.
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other mods and configuration
+      description: Include item/storage mods, their versions, and automation range settings.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs and screenshots
+      description: Attach BepInEx/LogOutput.log excerpts from client and host, and screenshots if helpful.

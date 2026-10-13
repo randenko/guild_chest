@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an improvement. Requests are tracked exclusively through GitHub Issues.
+title: "[Feature] "
+body:
+  - type: markdown
+    attributes:
+      value: "Feature requests and bug reports are tracked exclusively through GitHub Issues. Check existing issues before submitting."
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would this help you do?
+      description: Describe the gameplay need or limitation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Explain the change and any alternatives you considered.
+    validations:
+      required: true
