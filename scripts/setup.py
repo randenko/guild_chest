@@ -51,7 +51,12 @@ def main():
             download('https://steamcdn-a.akamaihd.net/client/installer/steamcmd_linux.tar.gz', archive)
             with tarfile.open(archive) as source:
                 source.extractall(steam, filter='data')
-        subprocess.run([str(steam / 'steamcmd.sh'), '+force_install_dir', str(server), '+login', 'anonymous',
+        steamcmd = str(steam / 'steamcmd.sh')
+        # Resolve app metadata before installing. A cold SteamCMD bootstrap can
+        # otherwise reach app_update before the app configuration is available.
+        subprocess.run([steamcmd, '+login', 'anonymous', '+app_info_update', '1',
+                        '+app_info_print', '896660', '+quit'], check=True)
+        subprocess.run([steamcmd, '+force_install_dir', str(server), '+login', 'anonymous',
                         '+app_update', '896660', '-beta', 'public', 'validate', '+quit'], check=True)
         if not (managed / 'assembly_valheim.dll').is_file():
             raise SystemExit('SteamCMD did not install the expected Managed folder. Check its output and retry setup.')

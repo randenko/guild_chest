@@ -24,8 +24,10 @@ compatibility; runtime behavior on newer builds needs separate verification.
   verification step saw a CDN-cached pre-publication 404. Metadata checks now use
   fresh query keys so a retry can detect the existing archive and skip uploading.
 - The follow-up checks pass 15 C# and 63 Python tests, including cached-404
-  regression coverage. Reference setup now selects Steam's public branch
-  explicitly when downloading or updating game references.
+  regression coverage. A cold CI run still failed with explicit public-branch
+  selection alone. Reference setup now refreshes app metadata in a separate
+  session before installing the public branch, following the successful local
+  recovery sequence.
 - Official tcli 0.2.4 installed the published package into a new isolated
   `GuildChest-1.1.0-launch` profile, resolving BepInExPack Valheim 5.4.2351 and
   Jötunn 2.30.2 automatically. Both installed Guild Chest DLLs match the release

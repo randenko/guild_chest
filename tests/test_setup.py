@@ -118,10 +118,15 @@ class SetupTests(unittest.TestCase):
         with patch.object(self.setup_module, 'download', side_effect=self.dependency_download) as download, \
                 patch.object(self.setup_module.subprocess, 'run') as steam:
             self.run_setup('--update')
-        steam.assert_called_once()
-        self.assertIn('+app_update', steam.call_args.args[0])
-        self.assertIn('896660', steam.call_args.args[0])
-        arguments = steam.call_args.args[0]
+        self.assertEqual(steam.call_count, 2)
+        refresh, install = [call.args[0] for call in steam.call_args_list]
+        self.assertIn('+app_info_update', refresh)
+        self.assertIn('+app_info_print', refresh)
+        self.assertIn('896660', refresh)
+        self.assertNotIn('+app_update', refresh)
+        self.assertIn('+app_update', install)
+        self.assertIn('896660', install)
+        arguments = install
         self.assertEqual(arguments[arguments.index('-beta') + 1], 'public')
         self.assertEqual(download.call_count, 2)
 
