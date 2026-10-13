@@ -35,9 +35,8 @@ compatibility; runtime behavior on newer builds needs separate verification.
   installation check; no gameplay was launched from that profile.
 - The live listing renders the player README, all four screenshots with alt text,
   recipe, configuration, Ko-fi support, and video links. All four release-specific
-  image downloads match the reviewed media. The saved YouTube description now
-  includes the verified listing URL; the live description needs that URL added
-  manually.
+  image downloads match the reviewed media. The user confirms applying the
+  updated YouTube description, including the verified listing URL.
 
 ## 1.1.0 launch preparation (2026-10-13)
 
@@ -72,10 +71,11 @@ compatibility; runtime behavior on newer builds needs separate verification.
   does not include individual checklist results, game modes, build/dependency
   versions, or logs; the detailed scenarios below remain available as a reference.
 
-Gameplay, Ko-fi, and the initial YouTube description are user-confirmed. After
-publication, verify clean mod-manager installation, dependency resolution, both
-DLL versions, listing rendering, and the downloadable ZIP checksum. Then add
-the verified Thunderstore listing URL to the saved and live YouTube descriptions.
+Gameplay, Ko-fi, and the updated YouTube description are user-confirmed. Clean
+mod-manager installation, dependency resolution, both DLL versions, listing
+rendering, and the downloadable ZIP checksum were verified after publication,
+as recorded above. The verified Thunderstore listing URL is included in both
+the saved and live YouTube descriptions. The 1.1.0 launch checks are complete.
 
 ## Completed checks (through 2026-10-12)
 
