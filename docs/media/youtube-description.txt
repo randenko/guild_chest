@@ -16,6 +16,9 @@ BUILD RECIPE
 INSTALLATION
 Install Guild Chest, BepInExPack Valheim, and Jötunn on every client and the host/server. Use matching Guild Chest versions.
 
+Download on Thunderstore:
+https://thunderstore.io/c/valheim/p/Paper_Street_Software/GuildChest/
+
 Downloads and release notes:
 https://github.com/randenko/valheim-guildchest/releases/latest
 
