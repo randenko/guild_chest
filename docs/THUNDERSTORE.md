@@ -34,9 +34,9 @@ The published archives match byte for byte. A clean official tcli profile instal
 Guild Chest 1.1.0, BepInExPack 5.4.2351, and Jötunn 2.30.2; the listing renders
 all four screenshots and the player README. See [validation](VALIDATION.md).
 
-The user has confirmed live gameplay and the Ko-fi link and applied the initial
-YouTube description. The saved description now includes the verified Thunderstore
-URL; adding that URL to the live video description remains a manual step.
+The user has confirmed live gameplay, the Ko-fi link, and applying the updated
+YouTube description, including the verified Thunderstore listing URL. The 1.1.0
+launch checks are complete.
 
 Configuration uses repository variable `THUNDERSTORE_NAMESPACE` (launch value:
 `Paper_Street_Software`) and secret `THUNDERSTORE_API_TOKEN`, supplied to tcli as

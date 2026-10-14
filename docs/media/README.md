@@ -18,8 +18,7 @@ exact pixels. Review confirms the chest grid and four recipe costs remain visibl
 The [edit prompts](image-prompts.txt) record the constraints used.
 
 Keep the supplied [45-second video](https://www.youtube.com/watch?v=3EhbnWifGQA).
-The user confirms applying the initial [supplied description](youtube-description.txt)
-to YouTube. The saved text now includes the verified
+The user confirms applying the updated [supplied description](youtube-description.txt)
+to YouTube, including the verified
 [Thunderstore listing URL](https://thunderstore.io/c/valheim/p/Paper_Street_Software/GuildChest/).
-Add that URL to the live video description manually; the release workflow does
-not update YouTube.
+The release workflow does not update YouTube.
