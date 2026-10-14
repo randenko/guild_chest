@@ -12,8 +12,8 @@ Linux host. No host .NET SDK or Unity Editor is required.
 3. Wait for the container's automatic setup to finish. It downloads roughly
    2.2 GB of Valheim Dedicated Server files using anonymous SteamCMD login,
    fetches pinned BepInEx and Jötunn dependencies, and then restores NuGet
-   packages. No Steam account credentials are needed. Existing references are
-   reused when rebuilding the container.
+   packages. No Steam account credentials are needed. Every container start
+   checks for Valheim server updates and validates the installed files.
 
 4. Run **Build Debug** (`Ctrl+Shift+B`) and **Run Tests**, or:
 
@@ -30,9 +30,14 @@ Linux host. No host .NET SDK or Unity Editor is required.
 
 The release ZIP is written to `artifacts/GuildChest-1.1.0.zip`, visible in the
 host workspace. Container rebuilds retain downloaded references in `.local`
-and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create downloads
-missing references and restores NuGet packages; updating existing game references
-still requires the explicit `setup --update` command below.
+and NuGet packages in the `guild-chest-nuget` Docker volume. Post-create prepares
+the GitHub CLI configuration permissions. Post-start runs
+`dotnet run --project build -- --target Restore --update-references` on every
+start. This updates and validates the Valheim server files through SteamCMD and
+refetches pinned mod dependencies before restoring NuGet packages. Wait for this
+command to finish before building. Run
+**Dev Containers: Rebuild Container** once to apply this startup hook to an
+existing container.
 
 The dev container includes Codex CLI, installed as `vscode` using
 [OpenAI's official shell installer](https://learn.chatgpt.com/docs/codex/cli).
