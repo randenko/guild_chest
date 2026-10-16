@@ -28,6 +28,41 @@ def reference_key(path):
         return str(path)
 
 
+def install_valheim(steamcmd, server):
+    manifest = server / 'steamapps/appmanifest_896660.acf'
+    previous_manifest = manifest.read_bytes() if manifest.is_file() else None
+    command = [steamcmd, '+@ShutdownOnFailedCommand', '1', '+@NoPromptForPassword', '1',
+               '+force_install_dir', str(server), '+login', 'anonymous',
+               '+app_update', '896660', '-beta', 'public', 'validate', '+quit']
+
+    def install():
+        subprocess.run(command, check=True)
+        if not (server / 'valheim_server_Data/Managed/assembly_valheim.dll').is_file():
+            raise SystemExit('SteamCMD did not install the expected Managed folder. Check its output and retry setup.')
+        if not manifest.is_file():
+            raise SystemExit('SteamCMD did not write the expected app manifest. Check its output and retry setup.')
+
+    try:
+        install()
+    except subprocess.CalledProcessError:
+        if previous_manifest is None:
+            raise
+        # Steam may deny access to a previously installed depot manifest after
+        # an update. Rebuild install metadata once, validating the existing files
+        # against the current public build instead of comparing old manifests.
+        backup = manifest.with_suffix('.acf.before-recovery')
+        backup.write_bytes(previous_manifest)
+        print(f'SteamCMD update failed; retrying with fresh install metadata. Backup: {backup}', flush=True)
+        manifest.unlink(missing_ok=True)
+        try:
+            install()
+        except BaseException:
+            # Restore metadata even if recovery is interrupted; server files may
+            # have changed, so the failed setup must still stop the build.
+            manifest.write_bytes(previous_manifest)
+            raise
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--update', action='store_true',
@@ -56,10 +91,7 @@ def main():
         # otherwise reach app_update before the app configuration is available.
         subprocess.run([steamcmd, '+login', 'anonymous', '+app_info_update', '1',
                         '+app_info_print', '896660', '+quit'], check=True)
-        subprocess.run([steamcmd, '+force_install_dir', str(server), '+login', 'anonymous',
-                        '+app_update', '896660', '-beta', 'public', 'validate', '+quit'], check=True)
-        if not (managed / 'assembly_valheim.dll').is_file():
-            raise SystemExit('SteamCMD did not install the expected Managed folder. Check its output and retry setup.')
+        install_valheim(steamcmd, server)
     for label, (team, name, version, wanted) in PACKAGES.items():
         if not args.update and all((DEPENDENCIES / item).is_file() for item in wanted):
             continue

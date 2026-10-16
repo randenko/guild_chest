@@ -6,6 +6,23 @@ provenance is recorded locally in `.local/references.json`; the publication reco
 below identifies the newer release build. A successful compile checks assembly
 compatibility; runtime behavior on newer builds needs separate verification.
 
+## Steam reference update recovery (2026-10-15)
+
+- Devcontainer startup failed updating Steam build 25730807 to 25909431:
+  Steam fetched the current public depot manifest but denied access to the
+  previously installed manifest while comparing the cached installation.
+- Setup now retries a failed cached install once with fresh installation
+  metadata, preserving server files and a backup of the previous app manifest.
+  Failed recovery restores the metadata and stops before recording new reference
+  provenance. Regression tests cover successive game releases, recovery failure,
+  missing replacement metadata, cold install failure, and app metadata failure.
+- The exact startup command, `dotnet run --project build -- --target Restore
+  --update-references`, reproduced the failure and recovered automatically in
+  the existing installation. Setup and restore succeeded against build 25909431.
+  The standalone setup fix passes 15 C# and 68 Python tests; Compile succeeds with
+  no warnings or errors against the refreshed references. Gameplay on this newer
+  build remains unvalidated.
+
 ## 1.1.0 publication (2026-10-13)
 
 - Release preparation merged through PR #21 after both CI checks passed. Tag

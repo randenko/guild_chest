@@ -39,6 +39,14 @@ command to finish before building. Run
 **Dev Containers: Rebuild Container** once to apply this startup hook to an
 existing container.
 
+If an update fails with an existing cached Steam installation, setup backs up
+`steamapps/appmanifest_896660.acf` as `appmanifest_896660.acf.before-recovery`
+inside `.local/valheim-server`, then retries once with fresh installation
+metadata. This handles Steam denying access to an older depot manifest after a
+game update. Cached server files stay available for validation against the current
+public build. If recovery fails, setup restores the previous metadata and stops
+the build; it does not record the attempted update as successful.
+
 The dev container includes Codex CLI, installed as `vscode` using
 [OpenAI's official shell installer](https://learn.chatgpt.com/docs/codex/cli).
 Run **Dev Containers: Rebuild Container** to add it to an existing container,
