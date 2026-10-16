@@ -19,7 +19,7 @@ compatibility; runtime behavior on newer builds needs separate verification.
 - The exact startup command, `dotnet run --project build -- --target Restore
   --update-references`, reproduced the failure and recovered automatically in
   the existing installation. Setup and restore succeeded against build 25909431.
-  The standalone setup fix passes 15 C# and 68 Python tests; Compile succeeds with
+  The standalone setup fix passes 15 C# and 71 Python tests; Compile succeeds with
   no warnings or errors against the refreshed references. Gameplay on this newer
   build remains unvalidated.
 

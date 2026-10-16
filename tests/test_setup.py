@@ -173,6 +173,84 @@ class SetupTests(unittest.TestCase):
                 key = '.local/valheim-server/valheim_server_Data/Managed/assembly_valheim.dll'
                 self.assertEqual(metadata['sha256'][key], hashlib.sha256(release.encode()).hexdigest())
 
+    def test_cached_validation_failures_retry_and_record_fresh_provenance(self):
+        managed = self.cache_server()
+        assembly = managed / 'assembly_valheim.dll'
+        for missing in (self.manifest, assembly):
+            with self.subTest(missing=missing.name):
+                previous_manifest = b'cached manifest'
+                self.manifest.write_bytes(previous_manifest)
+                assembly.write_bytes(b'cached references')
+                installs = []
+
+                def steam_command(command, **kwargs):
+                    if '+app_update' not in command:
+                        return
+                    installs.append(command)
+                    if len(installs) == 1:
+                        missing.unlink()
+                        return
+                    self.assertFalse(self.manifest.exists())
+                    self.assertEqual(self.manifest.with_suffix('.acf.before-recovery').read_bytes(),
+                                     previous_manifest)
+                    self.manifest.write_text('new manifest')
+                    assembly.write_bytes(b'new references')
+
+                with patch.object(self.setup_module, 'download', side_effect=self.dependency_download), \
+                        patch.object(self.setup_module.subprocess, 'run', side_effect=steam_command) as steam:
+                    metadata = self.run_setup('--update')
+                self.assertEqual(steam.call_count, 3)
+                self.assertEqual(len(installs), 2)
+                self.assertEqual(metadata['steam_manifest'], 'new manifest')
+                key = '.local/valheim-server/valheim_server_Data/Managed/assembly_valheim.dll'
+                self.assertEqual(metadata['sha256'][key], hashlib.sha256(b'new references').hexdigest())
+
+    def test_cached_validation_failure_restores_metadata_when_recovery_fails(self):
+        self.cache_server()
+        previous_manifest = self.manifest.read_bytes()
+        provenance = self.setup_module.LOCAL / 'references.json'
+        provenance.write_text('previous successful provenance')
+        installs = []
+
+        def steam_command(command, **kwargs):
+            if '+app_update' in command:
+                installs.append(command)
+                if len(installs) == 1:
+                    self.manifest.unlink()
+                    return
+                self.manifest.write_text('failed recovery metadata')
+                raise subprocess.CalledProcessError(8, command)
+
+        with patch.object(self.setup_module, 'download') as download, \
+                patch.object(self.setup_module.subprocess, 'run', side_effect=steam_command):
+            with self.assertRaises(subprocess.CalledProcessError):
+                self.run_setup('--update')
+        self.assertEqual(len(installs), 2)
+        self.assertEqual(self.manifest.read_bytes(), previous_manifest)
+        self.assertEqual(provenance.read_text(), 'previous successful provenance')
+        download.assert_not_called()
+
+    def test_failed_cold_install_validation_does_not_retry(self):
+        managed = self.cache_server()
+        assembly = managed / 'assembly_valheim.dll'
+        for missing in (self.manifest, assembly):
+            with self.subTest(missing=missing.name):
+                self.manifest.unlink(missing_ok=True)
+
+                def steam_command(command, **kwargs):
+                    if '+app_update' in command:
+                        self.manifest.write_text('first install metadata')
+                        missing.unlink()
+
+                with patch.object(self.setup_module, 'download') as download, \
+                        patch.object(self.setup_module.subprocess, 'run', side_effect=steam_command) as steam:
+                    with self.assertRaises(SystemExit):
+                        self.run_setup('--update')
+                self.assertEqual(steam.call_count, 2)
+                self.assertFalse(self.manifest.with_suffix('.acf.before-recovery').exists())
+                self.assertFalse((self.setup_module.LOCAL / 'references.json').exists())
+                download.assert_not_called()
+
     def test_failed_recovery_restores_metadata_and_does_not_publish_new_provenance(self):
         self.cache_server()
         previous_manifest = self.manifest.read_bytes()

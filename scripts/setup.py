@@ -44,7 +44,7 @@ def install_valheim(steamcmd, server):
 
     try:
         install()
-    except subprocess.CalledProcessError:
+    except (subprocess.CalledProcessError, SystemExit):
         if previous_manifest is None:
             raise
         # Steam may deny access to a previously installed depot manifest after
