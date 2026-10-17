@@ -1,9 +1,17 @@
 # Launch media
 
-The four staged screenshots in `original/` are preserved without modification.
+The four current screenshots in `original/` are preserved without modification.
 Separate presentation copies are in `presentation/`; they are hosted at the
 release tag's raw GitHub URLs by the packaged listing and excluded from the ZIP.
 The root README supplies captions and alt text.
+
+The corrected cover shows the chest facing forward. The previous capture and
+presentation copy are retained as `01_cover_backward.jpg` and
+`01_cover_backward.png` in their respective directories.
+
+The package [icon](../../icon.png) uses the selected emerald-and-gold guild crest.
+All four high-resolution [icon options and prompts](icon-options/prompts.md),
+along with the previous package icon, are retained for posterity.
 
 | Image | Presentation edit | Caption |
 | --- | --- | --- |
