@@ -1,0 +1,79 @@
+[b][size=5]Guild Chest[/size][/b]
+[b]One world. One shared stash.[/b]
+
+Guild Chest adds a gold-decorated chest connected to one shared [b]32-slot inventory[/b] across your Valheim world. Build access points at your main base, mining camps, and distant outposts to reach the same supplies wherever you adventure.
+
+[url=https://www.youtube.com/watch?v=3EhbnWifGQA]Watch the 45-second gameplay video.[/url]
+
+[b]Bug reports and feature requests are tracked exclusively through [url=https://github.com/randenko/valheim-guildchest/issues]GitHub Issues[/url].[/b]
+
+[b][size=4]Features[/size][/b]
+[list]
+[*]Every Guild Chest accesses the same [b]32 slots (8 x 4)[/b], even when other access points are far away or unloaded. Additional chests add access points, not capacity. Each world has its own stash.
+[*]Store metals and other supplies. Item quality, durability, crafter information, and custom data use Valheim's serialization; stacks merge using vanilla rules.
+[*]One player can access the shared inventory at a time. Normal ward permissions apply at the chest you open.
+[*]Use the normal inventory window to drag, split, quick-transfer, Take All, and Stack All. Move items to your player inventory before using or dropping them.
+[*]Contents are saved in the host/server's world save. Destroying a chest refunds its construction materials normally and never drops shared contents.
+[*]Destroying the last chest keeps the stash saved, including across restarts. Rebuild a Guild Chest in that world to access it again.
+[/list]
+
+[b][size=4]Build recipe[/size][/b]
+Use the hammer near a [b]workbench[/b]. Guild Chest appears immediately after the reinforced chest in the hammer menu.
+[list]
+[*]20 Fine wood
+[*]10 Iron
+[*]2 Surtling cores
+[*]250 Coins
+[/list]
+
+[b][size=4]Requirements[/size][/b]
+Install Guild Chest and both dependencies on [b]every client and the host/server[/b]. Use matching Guild Chest versions and restart after updates. Stop a dedicated server before replacing files.
+[list]
+[*][url=https://thunderstore.io/c/valheim/p/denikson/BepInExPack_Valheim/]BepInExPack Valheim[/url] - tested with 5.4.2351.
+[*][url=https://www.nexusmods.com/valheim/mods/1138]Jötunn - the Valheim Library[/url] - tested with 2.30.2. Also available on [url=https://thunderstore.io/c/valheim/p/ValheimModding/Jotunn/]Thunderstore[/url].
+[/list]
+Dependencies are separate downloads. Keep item mods installed on the host and all clients when storing their items.
+
+[b][size=4]Install with Vortex[/size][/b]
+Manage Valheim in Vortex and install the required dependencies. Download Guild Chest using [b]Mod manager download[/b], then install, enable, and deploy it. You can also add the release ZIP through Vortex's local archive installation.
+
+The GitHub 1.1.0 release ZIP has been installed through Vortex and tested successfully by the author. Check that your Vortex setup supplies the required dependency versions; a dependency listing does not guarantee automatic installation.
+
+[b][size=4]Manual installation[/size][/b]
+Install the dependencies using their own instructions. Extract the release ZIP's [b]BepInEx[/b] folder into your Valheim installation. Keep both files together:
+[code]BepInEx/plugins/GuildChest/GuildChest.dll
+BepInEx/plugins/GuildChest/GuildChest.Core.dll[/code]
+
+For multiplayer, repeat the installation on every client and the host/server. When updating, replace both DLLs and avoid leaving an older copy elsewhere in the plugins folder.
+
+[b][size=4]Configuration[/size][/b]
+After the first launch, edit [b]BepInEx/config/randenko.GuildChest.cfg[/b]:
+[code][Compatibility]
+Automation range = 20[/code]
+The host enforces this maximum distance in metres for supported storage-mod transfers and resource previews. Allowed range: 1-100. Configure clients and host consistently; an integration's own range can restrict it further. Normal chest interaction keeps its usual range. Capacity and construction costs are fixed.
+
+[b][size=4]Compatibility[/size][/b]
+Guild Chest supports solo, player-hosted, and dedicated-server use on PCs with BepInEx. Console clients cannot load the mod.
+
+Optional adapters were tested in the native fixture with [b]AzuAutoStore 3.1.7[/b] and [b]AzuCraftyBoxes 1.8.27[/b]. Neither is required or bundled. AutoStore supports player hotkey/single-item deposits. CraftyBoxes supports nearby resource previews, crafting supply, and building after acknowledged transfers. AutoStore ground-drop automation and CraftyBoxes fuel/ore feeding and Epic Loot consumers exclude guild storage. Other storage mods need explicit integration.
+
+Recorded native checks use [b]Valheim 1.0.16 (Steam build 25527701)[/b]. Compilation against newer references does not establish gameplay compatibility. See the [url=https://github.com/randenko/valheim-guildchest/blob/main/docs/VALIDATION.md]validation record[/url] and [url=https://github.com/randenko/valheim-guildchest/blob/main/docs/COMPATIBILITY.md]compatibility details[/url] for tested behavior and limits.
+
+[b][size=4]Backups and removal[/size][/b]
+Back up the complete world before installing or removing the mod. To remove it, first withdraw all shared contents into ordinary storage and remove the Guild Chests while the mod is installed. Save, then stop the game/server before removing the plugin files.
+
+Keep a backup from before removal: loading and saving without the mod can lose its custom prefabs and shared state. Destroying the last chest alone does not empty the saved stash. World and character saves remain separate; Guild Chest does not make them one atomic transaction or protect against edited characters and malicious clients. Test changes in a disposable world before using a world you intend to keep.
+
+[b][size=4]Troubleshooting and support[/size][/b]
+A rejected transfer displays the host's reason and leaves your items untouched. Check matching versions, ward access, available space, and required item mods. Inspect [b]BepInEx/LogOutput.log[/b] for details.
+
+Submit [url=https://github.com/randenko/valheim-guildchest/issues/new?template=bug_report.yml]bug reports[/url] with versions, reproduction steps, and relevant logs. Submit [url=https://github.com/randenko/valheim-guildchest/issues/new?template=feature_request.yml]feature requests[/url] on GitHub too. GitHub Issues is the exclusive tracking channel.
+
+[b][size=4]Source and credits[/size][/b]
+Guild Chest is free and open source under the [url=https://github.com/randenko/valheim-guildchest/blob/main/LICENSE]MIT license[/url].
+
+[url=https://github.com/randenko/valheim-guildchest]Source code[/url] | [url=https://github.com/randenko/valheim-guildchest/releases]Release notes[/url] | [url=https://thunderstore.io/c/valheim/p/Paper_Street_Software/GuildChest/]Thunderstore[/url] | [url=https://ko-fi.com/randenko]Optional support on Ko-fi[/url]
+
+Thanks to the BepInEx and Jötunn teams, and to Iron Gate Studio for Valheim. Those projects and their assets retain their respective licenses and ownership.
+
+[i]Media disclosure: presentation screenshots are AI-assisted edits of actual gameplay captures; original captures are preserved in the source repository. The promotional crest uses generated artwork. This page's description was prepared with AI assistance and reviewed by the author before publication.[/i]

@@ -169,6 +169,26 @@ sys.exit(int(os.environ.get('GUILDCHEST_FAKE_CLI_EXIT', '0')))
         self.assertIn('Already published', self.run_publish(preflight=False))
         self.assertFalse(self.trace.exists())
 
+    def test_existing_but_unusable_version_never_permits_another_upload(self):
+        for changes in ({'is_active': False}, {'download_url': ''}, {'version_number': '1.2.2'}):
+            self.http.responses[self.version_url] = {**self.existing(), **changes}
+            with self.subTest(changes=changes):
+                self.assert_rejected('inactive or has no download URL|different package version')
+
+    def test_upload_dependencies_come_from_tag_without_inheriting_previous_version_metadata(self):
+        # Simulate incomplete moving metadata; only the verified tagged archive
+        # supplies upload dependencies, and no prior package lookup is configured.
+        (self.root / 'manifest.json').write_text(json.dumps({**self.manifest, 'dependencies': []}))
+        self.http.responses[self.version_url] = [None, self.existing()]
+        self.http.responses[self.download_url] = self.contents
+        self.assertIn('Published and verified', self.run_publish(preflight=False))
+        recorded = json.loads(self.trace.read_text())
+        dependencies = tomllib.loads(recorded['config'])['package']['dependencies']
+        expected = {dependency.rsplit('-', 1)[0]: dependency.rsplit('-', 1)[1]
+                    for dependency in self.manifest['dependencies']}
+        self.assertEqual(dependencies, expected)
+        self.assertEqual(bytes.fromhex(recorded['archive']), self.contents)
+
     def test_conflicting_existing_version_fails_clearly(self):
         self.http.responses[self.version_url] = self.existing()
         self.http.responses[self.download_url] = b'other archive'
