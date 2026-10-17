@@ -1,4 +1,4 @@
-# Keep workspace file protections and allow GitHub CLI network requests.
+# Keep workspace file protections and allow GitHub and build dependency requests.
 default_permissions = "github-workspace"
 
 [features]
@@ -13,3 +13,15 @@ enabled = true
 [permissions.github-workspace.network.domains]
 "api.github.com" = "allow"
 "github.com" = "allow"
+
+# GitHub raw files, source archives, and release downloads.
+"raw.githubusercontent.com" = "allow"
+"codeload.github.com" = "allow"
+"release-assets.githubusercontent.com" = "allow"
+
+# NuGet packages for builds and tests.
+"api.nuget.org" = "allow"
+
+# Pinned BepInEx and Jotunn dependencies, including download redirects.
+"thunderstore.io" = "allow"
+"ccdn.thunderstore.io" = "allow"

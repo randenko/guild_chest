@@ -101,13 +101,15 @@ container user and stays outside the repository.
 
 The repository's `.codex/config.toml` selects the `github-workspace` permission
 profile. It keeps workspace file protections and enables Codex's network proxy
-for `api.github.com` and `github.com`; other command-network destinations still
-require approval. This lets `gh` verify credentials instead of reporting a
-misleading invalid-token error when the sandbox blocks GitHub. Codex loads these
-settings for trusted projects. Start a new Codex session to apply changes; no
-container rebuild is needed. Explicit permission-profile or sandbox selections
-can override the project default. Verify the default from the container terminal
-with `codex sandbox -- gh auth status --active`. See the
+for GitHub API requests, raw files, source archives, and release downloads;
+`api.nuget.org` for .NET package restores; and `thunderstore.io` and
+`ccdn.thunderstore.io` for pinned mod dependency downloads. Other command-network
+destinations still require approval. This lets `gh` verify credentials instead
+of reporting a misleading invalid-token error when the sandbox blocks GitHub.
+Codex loads these settings for trusted projects. Start a new Codex session to
+apply changes; no container rebuild is needed. Explicit permission-profile or
+sandbox selections can override the project default. Verify the default from the
+container terminal with `codex sandbox -- gh auth status --active`. See the
 [Codex network configuration](https://learn.chatgpt.com/docs/agent-approvals-security#network-access)
 for details.
 
