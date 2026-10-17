@@ -15,7 +15,12 @@
   ],
   "customizations": {
     "vscode": {
-      "extensions": ["ms-dotnettools.csharp"],
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "donjayamanne.githistory",
+        "mhutchie.git-graph",
+        "GitHub.vscode-github-actions"
+      ],
       "settings": {
         "dotnet.preferCSharpExtension": true,
         "dotnet.defaultSolution": "GuildChest.sln"
