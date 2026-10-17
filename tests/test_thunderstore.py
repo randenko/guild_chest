@@ -19,6 +19,7 @@ import zipfile
 PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT / 'scripts'))
 from package_format import PACKAGE_FILES, REPOSITORY, release_links
+import publish_thunderstore as thunderstore
 from publish_thunderstore import CATEGORIES, CredentialRedirect, Http, THUNDERSTORE, check_availability, inspect_package, publish
 
 
@@ -131,7 +132,7 @@ sys.exit(int(os.environ.get('GUILDCHEST_FAKE_CLI_EXIT', '0')))
 
     def run_publish(self, **kwargs):
         defaults = dict(repository=self.root, namespace='Paper_Street_Software', token='fixture-token',
-                        http=self.http, cli=str(self.cli), sleep=lambda seconds: None)
+                        http=self.http, enabled='true', cli=str(self.cli), sleep=lambda seconds: None)
         return publish(kwargs.pop('tag', 'v1.2.3'), **{**defaults, **kwargs})
 
     def assert_rejected(self, message, **kwargs):
@@ -162,6 +163,37 @@ sys.exit(int(os.environ.get('GUILDCHEST_FAKE_CLI_EXIT', '0')))
     def test_preflight_is_get_only_and_never_invokes_cli(self):
         self.assertIn('Preflight passed', self.run_publish())
         self.assertFalse(self.trace.exists())
+
+    def test_upload_requires_explicit_true_before_remote_reads_or_cli_execution(self):
+        for enabled in ('', 'false', 'True', '1', True):
+            with self.subTest(enabled=enabled):
+                self.assert_rejected('THUNDERSTORE_PUBLISH_ENABLED must be true', enabled=enabled)
+                self.assertFalse(self.http.calls)
+
+    def test_upload_is_disabled_by_default(self):
+        with self.assertRaisesRegex(ValueError, 'THUNDERSTORE_PUBLISH_ENABLED must be true'):
+            publish('v1.2.3', repository=self.root, namespace='Paper_Street_Software',
+                    token='fixture-token', http=self.http, preflight=False, cli=str(self.cli))
+        self.assertFalse(self.http.calls)
+        self.assertFalse(self.trace.exists())
+
+    def test_preflight_remains_available_when_publishing_is_disabled_or_unconfigured(self):
+        for enabled in ('', 'false'):
+            with self.subTest(enabled=enabled):
+                self.assertIn('Preflight passed', self.run_publish(enabled=enabled))
+        self.assertFalse(self.trace.exists())
+
+    def test_cli_passes_environment_switch_to_upload_guard(self):
+        environment = {'THUNDERSTORE_NAMESPACE': 'Paper_Street_Software',
+                       'TCLI_AUTH_TOKEN': 'fixture-token', 'THUNDERSTORE_PUBLISH_ENABLED': 'true',
+                       'GITHUB_STEP_SUMMARY': ''}
+        with patch.dict(os.environ, environment), \
+                patch.object(sys, 'argv', ['publish_thunderstore.py', 'v1.2.3', '--upload']), \
+                patch.object(thunderstore, 'publish', return_value='Verified upload') as upload, \
+                patch('sys.stdout', new_callable=io.StringIO):
+            thunderstore.main()
+        self.assertEqual(upload.call_args.kwargs['enabled'], 'true')
+        self.assertFalse(upload.call_args.kwargs['preflight'])
 
     def test_matching_existing_version_succeeds_without_upload(self):
         self.http.responses[self.version_url] = self.existing()
