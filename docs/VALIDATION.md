@@ -6,6 +6,46 @@ provenance is recorded locally in `.local/references.json`; the publication reco
 below identifies the newer release build. A successful compile checks assembly
 compatibility; runtime behavior on newer builds needs separate verification.
 
+## Nexus Mods publishing preparation (2026-10-17)
+
+- The owner manually published Guild Chest 1.1.0 at
+  [Nexus Mods](https://www.nexusmods.com/valheim/mods/4476) and configured the
+  GitHub Actions secret and variables. Secret presence and public variable
+  values were inspected; secret values were not retrieved. The publishing
+  switch remains `false` pending review and authenticated Actions preflight.
+- The implemented helper's public read-only preflight passes against the live
+  GitHub and Nexus APIs. GitHub's 65,350-byte archive has SHA-256
+  `133b8fe196e45c49fc0d984d07b9f948a070ca25557fe4b7eab8baa70bf7dbf3`.
+  Nexus's MD5 lookup `0093945ce82ae6216233e1abd450930f` resolves to that size,
+  Valheim game 3667, page 4476, main-file group 8177514, and initial file 25735.
+  This verifies archive identity through Nexus metadata, not a separate Nexus
+  SHA-256 download check.
+- Public metadata reports 1.1.0 as the primary main file, scan status VERIFIED,
+  and the initial changelog. The page uses file-level requirements; metadata
+  completion preserves their range/DLC definitions when adding a new version.
+- Publisher regression tests cover baseline write refusal, target and archive
+  conflicts, delayed indexing, ambiguous upload and changelog attempts, exact
+  outgoing bytes, requirement preservation, and recovery without duplicates.
+  Existing Thunderstore tests exercise the extracted shared release validator.
+- Review regressions cover authenticated Nexus evidence of an existing version
+  missing from GraphQL, API identity disagreements, and interrupted predecessor
+  metadata updates losing either or both dependency sets. Preparation blocks
+  until the predecessor is repaired, checks older retained history even without
+  intent artifacts, and still accepts genuinely empty baseline requirements.
+- Thunderstore has neither reviewed failure mode: its existing-version lookup
+  does not combine independent API views, and dependency metadata comes directly
+  from the verified tagged manifest rather than a predecessor's mutable state.
+  Added tests confirm unusable existing versions prevent uploads and incomplete
+  moving metadata cannot discard the tagged upload dependencies.
+- The full NUKE Test target passes 15 C# and 114 Python tests. actionlint accepts
+  the Nexus and affected Thunderstore workflows; document links and whitespace
+  checks pass. No native gameplay code changed.
+- No Nexus upload, changelog, page, or GitHub configuration was changed during
+  implementation. Authenticated preflight requires the stored secret in GitHub
+  Actions after review/merge. Upload authorization and Vortex update detection
+  remain pending the next real release. The owner's prior drag-and-drop Vortex
+  installation test is retained as confirmed evidence.
+
 ## Steam reference update recovery (2026-10-15)
 
 - Devcontainer startup failed updating Steam build 25730807 to 25909431:

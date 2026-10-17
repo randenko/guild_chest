@@ -265,8 +265,11 @@ Stable `vX.Y.Z` tags are supported; prerelease tags are rejected. Validation
 failures create no release. Rerunning a successful workflow can replace assets on
 an existing draft, but refuses to modify a published release. The draft workflow
 uses GitHub's built-in token; only its final job receives `contents: write`.
-Publishing the reviewed GitHub release triggers the separate Thunderstore workflow,
-which requires a Thunderstore token. See [Thunderstore publishing and retries](THUNDERSTORE.md).
+Publishing the reviewed GitHub release triggers the separate Thunderstore workflow
+and, when enabled, Nexus Mods workflow. Both consume the exact reviewed GitHub
+archive without rebuilding. Nexus 1.1.0 was published manually; automation only
+accepts later stable versions. See [Thunderstore publishing and retries](THUNDERSTORE.md)
+and [Nexus Mods configuration, preflight, and recovery](NEXUSMODS.md).
 GitHub workflows do not bump versions, create tags, or publish drafts automatically.
 
 To exercise release validation and packaging locally without creating or

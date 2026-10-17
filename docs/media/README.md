@@ -29,4 +29,7 @@ Keep the supplied [45-second video](https://www.youtube.com/watch?v=3EhbnWifGQA)
 The user confirms applying the updated [supplied description](youtube-description.txt)
 to YouTube, including the verified
 [Thunderstore listing URL](https://thunderstore.io/c/valheim/p/Paper_Street_Software/GuildChest/).
-The release workflow does not update YouTube.
+The saved description also includes the verified
+[Nexus Mods page](https://www.nexusmods.com/valheim/mods/4476).
+Applying this new link to the live video description remains a manual step;
+the release workflows do not update YouTube.
