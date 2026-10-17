@@ -1,0 +1,15 @@
+# Keep workspace file protections and allow GitHub CLI network requests.
+default_permissions = "github-workspace"
+
+[features]
+network_proxy = true
+
+[permissions.github-workspace]
+extends = ":workspace"
+
+[permissions.github-workspace.network]
+enabled = true
+
+[permissions.github-workspace.network.domains]
+"api.github.com" = "allow"
+"github.com" = "allow"

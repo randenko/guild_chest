@@ -99,6 +99,18 @@ this volume removes the saved login. In this container, GitHub CLI falls back to
 when no system credential store is available; the directory is restricted to the
 container user and stays outside the repository.
 
+The repository's `.codex/config.toml` selects the `github-workspace` permission
+profile. It keeps workspace file protections and enables Codex's network proxy
+for `api.github.com` and `github.com`; other command-network destinations still
+require approval. This lets `gh` verify credentials instead of reporting a
+misleading invalid-token error when the sandbox blocks GitHub. Codex loads these
+settings for trusted projects. Start a new Codex session to apply changes; no
+container rebuild is needed. Explicit permission-profile or sandbox selections
+can override the project default. Verify the default from the container terminal
+with `codex sandbox -- gh auth status --active`. See the
+[Codex network configuration](https://learn.chatgpt.com/docs/agent-approvals-security#network-access)
+for details.
+
 The C# extension is configured to handle the SDK-style `net48` plugin. If
 VS Code opens before automatic setup finishes, wait for it to complete and then
 run **Developer: Reload Window** to refresh unresolved game symbols. If reference
