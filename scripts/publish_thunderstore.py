@@ -80,9 +80,11 @@ def configuration(namespace, manifest):
 
 
 def publish(tag, *, repository=ROOT, namespace='', token='', http=None, preflight=True,
-            cli='tcli', run=subprocess.run, sleep=time.sleep):
+            enabled='', cli='tcli', run=subprocess.run, sleep=time.sleep):
     if not re.fullmatch(f'v{VERSION}', tag):
         raise ValueError('Only stable vX.Y.Z release tags are accepted.')
+    if not preflight and enabled != 'true':
+        raise ValueError('THUNDERSTORE_PUBLISH_ENABLED must be true for publishing.')
     if not re.fullmatch(r'[A-Za-z0-9_]+', namespace):
         raise ValueError('THUNDERSTORE_NAMESPACE is missing or invalid.')
     if not token.strip():
@@ -129,7 +131,8 @@ def main():
     args = parser.parse_args()
     try:
         message = publish(args.tag, namespace=os.environ.get('THUNDERSTORE_NAMESPACE', ''),
-                          token=os.environ.get('TCLI_AUTH_TOKEN', ''), preflight=not args.upload, cli=args.cli)
+                          token=os.environ.get('TCLI_AUTH_TOKEN', ''), preflight=not args.upload,
+                          enabled=os.environ.get('THUNDERSTORE_PUBLISH_ENABLED', ''), cli=args.cli)
         print(message)
         summary = os.environ.get('GITHUB_STEP_SUMMARY')
         if summary:

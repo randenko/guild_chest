@@ -13,7 +13,8 @@ the [YouTube description](media/youtube-description.txt) before release.
    creates a GitHub **draft**, without publishing it.
 2. Review the notes, ZIP, checksum, listing, screenshots, reference-build details,
    and relevant gameplay checks before manually publishing the GitHub draft.
-3. GitHub's `release: published` event starts the separate Thunderstore workflow.
+3. GitHub's `release: published` event starts the separate Thunderstore workflow
+   when repository variable `THUNDERSTORE_PUBLISH_ENABLED` is exactly `true`.
    It accepts stable published releases, validates the tag's ancestry on
    `origin/main`, and compares the ZIP manifest with the manifest at that tag.
    It downloads the release's exact ZIP and SHA-256 asset, verifies checksum,
@@ -44,14 +45,24 @@ Configuration uses repository variable `THUNDERSTORE_NAMESPACE` (launch value:
 was verified by the successful 1.1.0 upload. The GitHub token has read-only
 repository permissions in this workflow.
 
+Set the **Actions repository variable** `THUNDERSTORE_PUBLISH_ENABLED` to `true`
+to permit publishing, or `false` to turn it off. An unset variable or any other
+value also disables publishing. This matches the Nexus Mods publishing switch;
+it is a repository variable, not a secret or a GitHub Environment setting.
+The value is passed into the helper's environment for an independent upload
+check, including direct `--upload` invocations.
+
 ## Read-only preflight and retries
 
 In **Actions → Thunderstore → Run workflow**, enter an existing stable release
 tag. Leave **Validate without uploading** enabled for GET-only preflight. To retry
-publication, disable that option. All uploads share one concurrency group and
-do not cancel earlier uploads.
+publication, disable that option and set `THUNDERSTORE_PUBLISH_ENABLED=true`.
+Read-only preflight remains available while publishing is disabled. A manual
+upload request while disabled fails with an explicit error before invoking tcli.
+All uploads share one concurrency group and do not cancel earlier uploads.
 
-The helper defaults to preflight, and an upload requires an explicit `--upload`:
+The helper defaults to preflight. An upload requires an explicit `--upload` and
+`THUNDERSTORE_PUBLISH_ENABLED=true` in the environment:
 
 ```bash
 python3 scripts/publish_thunderstore.py v1.1.0 --preflight
